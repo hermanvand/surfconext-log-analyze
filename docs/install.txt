@@ -1,0 +1,64 @@
+This is the installation document of the log analyzer for SURFconext logins
+
+You already unpacked the tarball :-) 
+There are a couple of steps to take to get the database up and running.
+
+
+-------------------
+SETUP YOUR DATABASE
+-------------------
+Make sure you create a database with:
+- name: DB_NAME
+- user: USER
+- password: PASS
+
+
+------------------------
+IMPORT SURFconext TABLES
+------------------------
+Two tables from SURFconext needs to be imported in your new database.
+
+1. log_logins. The actual SURFconext logfile
+2. janus__entity. The SP & IDP entity file from the SURFconext configuration.
+
+
+------------------
+EDIT CONFIGURATION
+------------------
+The log analyzer configuration file is: scripts/etc/la.ini
+
+You have to edit the database settings to reflect your setup.
+
+This is a snippet from the configuration file of these settings:
+
+	##########################
+	# edit database settings #
+	##########################
+	# expect all tables to be in one database
+
+	$LA['DB'] = array();
+	$LA['DB']['mysql_host'] = "localhost";
+	$LA['DB']['mysql_user'] = "USER";
+	$LA['DB']['mysql_pass'] = "PASS";
+	$LA['DB']['mysql_db']   = "DB_NAME";
+
+	$LA['mysql_link'] = "";
+
+	# need these tables for input
+	$LA['table_logins'] = "log_logins";
+	$LA['table_entities'] = "janus__entity";
+
+
+----------------------
+IMPORT DATABASE SCHEMA
+----------------------
+Goto the directory db/
+
+clean the database
+mysql -u USER --password=PASS DB_NAME < drop_log_analyze.sql
+
+import the schema:
+mysql -u USER --password=PASS DB_NAME < create_log_analyze.sql
+
+
+You're done! See docs/readme.txt for a quick start.

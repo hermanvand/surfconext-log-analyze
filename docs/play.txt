@@ -1,0 +1,139 @@
+Learn how to play with the log analyzer settings.
+
+You can tune the analyzer for your setup to get better performance.
+
+
+------------------
+EDIT CONFIGURATION
+------------------
+The log analyzer configuration file is: scripts/etc/la.ini
+
+This is a snippet from the configuration file of the program settings:
+
+	#########################
+	# edit program settings #
+	#########################
+	# CHUNK_COUNT * CHUNK_SIZE * PROCESSES = number of log lines to process
+	# - for example 1440 chunks (internval: 1 minute/day) * 1500 lines * 1 process = 2.160.000 lines
+	# - or 960 chunks (interval 90 seconds/day) * 20000 lines * 10 processes = 192.000.000
+
+	# defaults for chunk
+	# - determine PREFERRED_CHUNK_SIZE for fastest processing
+	# [- a bigger size results in less chunks and processes]
+	$LA['preferred_chunk_size'] = 20000;
+	# - set USE_PREFERRED_CUNK_SIZE=0 if you want to use chunks based on count & seconds
+	$LA['use_preferred_chunk_size'] = 1; 
+	# - use MAX_CHUNK_COUNT to limit total run time of all processes
+	# [- this is the desired chunk_count * max processes]
+	$LA['max_chunk_count'] = 9600; 
+	# - use MAX_CHUNK_SIZE to limit memory usage of each process & per process execution time.
+	$LA['max_chunk_size'] = 30000;
+
+	# defaults for analyze
+	# - use MAX_PROCESSES to limit the number of parallel running processes.
+	$LA['max_processes'] = 10;
+	# - specify the reporting process time in seconds, longer times will be logged
+	$LA['max_allowed_process_time'] = 90;
+	# - set max number of chunk to be processed in one go. Use 0 to process all
+	$LA['max_allowed_process_chunk'] = 0;
+
+	# you can decide to disable the unique user count and only count logins.
+	$LA['disable_user_count'] = 0;
+
+
+These variables affect the chunk script:
+
+* preffered_chunk_size [NUMBER OF LOGLINES]
+
+This is the size of the chunks, calculated in number of logins. The first step from the analyzer is to create chunks of loglines that are later processed by one or more analyzers. A bigger chunk size results in less total chunks. Bigger chunks require more process power and memory per process.
+
+* use_preferred_chunk_size [0|1]
+
+You can have each chunk to be the same size (1). Or you can use the size to calculate the chunk count and create chunks of equal time periods (0). This (0) wil create unequal chunk sizes because in peak hours more loglines are logged than in the middle of the night.
+
+* max_chunk_count [NUMBER OF CHUNKS]
+ 
+This is the maximum of chunks to be created. The chunk script will not create more than this amount of chunks. This is used to limit the total run time of all processes. The initial value should be big enough when periodically running these scripts. For initial processing of a full log, this value may not be sufficient.
+
+If this value is reached the chunk_size will be automatically adjusted to this max_chunk_count.
+
+* max_chunk_size [NUMBER OF LINES PER CHUNK]
+
+Chunks bigger than this size are not proccessed. This is used to limit the execution time and memory usage per proces.
+
+
+These variables affect the analyze script:
+
+* max_processes [NUMBER OF PARALLEL RUNNING PROCESSES]
+
+This number limits the number of processes running simultaneously. More processes result in faster processing but too much processes may result in a lot of waiting on the mysql database. You have to figure out which combination of chunk_size and max_processes works best for your setup. 
+
+After some tests I decided to go for a chunk size of 20.000 and running 10 simultaneous processes. 200.000 lines are processed in 90 seconds on my intel i5 laptop with 4gb ram, running ubuntu 12.04. Tweaking mysql would be the next step for performance enhancements. 200.000 lines in 90 seconds equals:
+- 2222 lines in 1 second
+- 8.000.000 in 1 hour
+- 192.000.000 in 1 day
+
+* max_allowed_process_time [NUMBER OF SECONDS]
+
+Specify a max_allowed_process_time to get a warning when a process exceeds the maximum processing time you anticipated.
+
+* max_allowed_process_chunk [NUMBER OF CHUNKS TO BE PROCESSED | 0]
+
+Use max_allowed_process_chunk to limit the number of chunks to be processed in one run of the analyze script. When max_allowed_process_chunk=0 then all chunks will be processed.
+
+Misc variables:
+
+* disable_user_count
+
+By default (disable_user_count=0) the scripts count logins AND unique users. You can disable the unique user count to limit the generated database size. The unique usercount creates a database table with unique users for each day.
+
+
+----
+TIPS
+----
+* to get a better performance out of the chunk script it is faster to create chunks with small periods of time.
+
+So, instead of chunking one month of data with:
+	./chunk.php from="2013-12-01 00:00:00" to="2013-12-31 23:59:59"
+
+try
+	./chunk.php from="2013-12-01 00:00:00" to="2013-12-10 23:59:59"
+	./chunk.php from="2013-12-11 00:00:00" to="2013-12-20 23:59:59"
+	./chunk.php from="2013-12-21 00:00:00" to="2013-12-31 23:59:59"
+
+Or even smaller periods depending on the size of your logfiles.
+
+
+---------------------------------------
+UNDERSTAND THE SCRIPT FILES/DIRECTORIES
+---------------------------------------
+The scripts/ directory consists of 4 subdirectories
+- bin: the actual script
+- etc: the configuration files
+- lib: library files
+- var: log files
+
+1. bin/ consists of three scripts:
+- chunk.php
+- analyze.php
+- test.php
+
+to be run in this order (see docs/readme.txt)
+
+2. etc/ consists of two files:
+- config.php (the config loader)
+- la.ini (the actual config file which defines the global LA)
+
+3. lib/ consists of 6 files:
+- libs.php (the libs loader)
+- errors.php (library to deal with program errors and logging)
+- mysql.php (basic mysql functions)
+- la.php (program functions that are used by the scripts, this contains the real deal :-)
+- logins.php (functions for the connection with the SURFconext logins table)
+- entities.php (functions for the connection with the SURFconext entity table)
+
+4. var/ consists of 1 file:
+- la.log (the log file, watched it for debugging)
+
+
+That's all folks. You should be good to go now.
