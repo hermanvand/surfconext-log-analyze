@@ -103,6 +103,8 @@ try
 
 Or even smaller periods depending on the size of your logfiles.
 
+NOTE: you are responsible of processing the correct files. The script will NOT detect overlapping chunks or identical chunks. So if you chunk your logfile twice. The analyze script will count the logins twice.
+
 
 ---------------------------------------
 UNDERSTAND THE SCRIPT FILES/DIRECTORIES

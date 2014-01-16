@@ -1,0 +1,311 @@
+Read what the log analyzer is all about in this document.
+
+You'll get insights in the resulting data structure but also in the internals of the scripts.
+
+
+----
+DATA
+----
+
+The result of the analyzing scripts is a new structure of your login data.
+
+The concepts in this structure are:
+- days. Statistics are summarized per day in the log_analyze_day table.
+- providers, statistics are counted per provider, a provider is a combination of a Service Provider (SP) and Identity Provider (IdP). These combination are stored in log_analyze_provider.
+- stats, the actual statistics, per day, per provider. Currently logins and unique users are counted.
+- users, to count unique users, every day has a seperate user table with the unique users per provider stored in them.
+
+
+log_analyze_day example:
++--------+------------+-----------------+------------+---------------------+---------------------+
+| day_id | day_day    | day_environment | day_logins | day_created         | day_updated         |
++--------+------------+-----------------+------------+---------------------+---------------------+
+|      1 | 2013-11-26 | P               |     143050 | 2014-01-14 19:58:02 | 2014-01-15 16:21:15 |
+|      2 | 2013-11-26 | T               |         76 | 2014-01-14 19:58:10 | 2014-01-15 16:21:15 |
+|      3 | 2013-11-27 | P               |     129307 | 2014-01-15 16:20:09 | 2014-01-15 16:22:12 |
+|      4 | 2013-11-26 | U               |          4 | 2014-01-15 16:20:43 | 2014-01-15 16:21:07 |
+|      5 | 2013-11-27 | T               |         33 | 2014-01-15 16:20:50 | 2014-01-15 16:22:11 |
++--------+------------+-----------------+------------+---------------------+---------------------+
+
+For each day you will see three entries based on the environment the entry was from. 
+- P = Production 
+- T = Test
+- U = Unknown (Unknown entries are entries wihtout a valid SP or IdP.)
+
+From this table you can immediately read the total day_logins. Monthly and/or yearly stats are simple 'sums' based on the DATE day_day.
+
+ 
+log_analyze_provider example:
++-------------+----------------+-----------------+
+| provider_id | provider_sp_id | provider_idp_id |
++-------------+----------------+-----------------+
+|           1 |              1 |               2 |
+|           2 |              2 |               3 |
+|           3 |              3 |               4 |
+|           4 |              4 |               5 |
+|           5 |              5 |               6 |
++-------------+----------------+-----------------+
+
+A Provider is a combination of SP and IDP. SP's and IDP's are listed in seperate tables.
+
+log_analyze_sp example:
++-------+----------------------------------------------+--------+-------------+
+| sp_id | sp_name                                      | sp_eid | sp_revision |
++-------+----------------------------------------------+--------+-------------+
+|     1 | iAvans portal | Avans                        |    476 |           4 |
+|     2 | N@Tschool ELO | Windesheim                   |    733 |           6 |
+|     3 | Google Apps student.uva.nl | Google          |    424 |           2 |
+|     4 | Google Apps University of Groningen | Google |    562 |           2 |
+|     5 | Google Apps students NL Utwente | Google     |    566 |           6 |
++-------+----------------------------------------------+--------+-------------+
+
+log_analyze_idp_example:
++--------+----------------------------+---------+--------------+
+| idp_id | idp_name                   | idp_eid | idp_revision |
++--------+----------------------------+---------+--------------+
+|      1 | http://www.surfnet.nl/test |       0 |            1 |
+|      2 | Avans Hogeschool           |      26 |          143 |
+|      3 | Hogeschool Windesheim      |     679 |            7 |
+|      4 | Universiteit van Amsterdam |      57 |          149 |
+|      5 | RUG                        |      15 |           90 |
++--------+----------------------------+---------+--------------+ 
+
+In these two tables you see the name of the SP/IdP and the unique entity. The entity is uniquely identified by an eid AND a revision in SURFconext.
+
+entities with eid=0 are 'Unknown' entities found in the logins, but not present (any more) in SURFconext.
+
+
+log_analyze_stats example:
++--------------+-------------------+--------------+-------------+
+| stats_day_id | stats_provider_id | stats_logins | stats_users |
++--------------+-------------------+--------------+-------------+
+|            1 |                 1 |        43414 |       17913 |
+|            1 |                 2 |        12828 |        6554 |
+|            1 |                 3 |         5887 |        3667 |
+|            1 |                 4 |        16239 |        8136 |
+|            1 |                 5 |         5975 |        3120 |
++--------------+-------------------+--------------+-------------+
+
+This is the most important table. You'll find logins and unique users per day per provider.
+
+The first line tells you (translated in english):
+
+On '2013-11-26' in the 'Production' environment the service 'iAvans portal | Avans' was accessed '43414' times by '17913' unique users from the identity provider 'Avans Hogeschool'.
+
+
+log_analyze_user__1 example:
++-------------+------------------+----------------------------------+
+| user_day_id | user_provider_id | user_name                        |
++-------------+------------------+----------------------------------+
+|           1 |                1 | 0005cd491d4ad71a6db4ddc6f0e7b348 |
+|           1 |                1 | 0006a7a8f9ccda5cf0b26e0fd3fbf427 |
+|           1 |                1 | 0007779cf3fe70bffdc643faee420cf9 |
+|           1 |                1 | 000d3d5e6523b85959f513582162dd36 |
+|           1 |                1 | 0013c2a373edea0c611357b963d57e05 |
++-------------+------------------+----------------------------------+
+
+This is part of the unique user table for day_id 1. The unique users are stored per provider. To get the unique users per day you need to do a distinct count of the users. Like:
+
+SELECT count(distinct(user_name)) FROM log_analyze_user__1
+
+
+This is the data you will be using most. Hope you like it!
+
+
+---------
+INTERNALS
+---------
+
+It is best to explain the internals by going through the flow of the scripts. 
+
+The analyzing process is cut in two pieces to be flexible and to have influence on the performance. First, equal sizes of chunks of the logfile are created and Sscond, multiple processes analyze the chunks.
+
+1. Creating chunks
+
+1a. the chunk script must be started with a 'from' and 'to' argument to be able to process pieces of 1 log_logins table. For example:
+
+./chunk.php from="2013-11-26 00:00:00" to="2013-11-28 23:59:59"
+
+1b. First the total login count in this period of the log_logins table is determined.
+
+1c. based on the settings in de configuration file la.ini (see docs/play.txt) the chunks are determined.
+
+Suppose the total count of logins in the specified period is 400.000. With a chunk size of 20.000 this will result in 20 chunks. These chunks are stored in the table log_analyze_chunk. See the following example: 
+
++----------+---------------------+---------------------+--------------+---------------------+---------------------+----------+-----------+
+| chunk_id | chunk_from          | chunk_to            | chunk_status | chunk_created       | chunk_updated       | chunk_in | chunk_out |
++----------+---------------------+---------------------+--------------+---------------------+---------------------+----------+-----------+
+|        1 | 2013-11-26 00:00:00 | 2013-11-26 09:41:39 | done         | 2014-01-14 19:57:29 | 2014-01-14 19:58:14 |    20003 |     20003 |
+|        2 | 2013-11-26 09:41:40 | 2013-11-26 11:10:24 | done         | 2014-01-14 19:57:29 | 2014-01-15 16:21:14 |    20001 |     20001 |
+|        3 | 2013-11-26 11:10:25 | 2013-11-26 12:39:53 | done         | 2014-01-14 19:57:29 | 2014-01-15 16:21:12 |    19997 |     19997 |
+|        4 | 2013-11-26 12:39:54 | 2013-11-26 14:13:07 | done         | 2014-01-14 19:57:29 | 2014-01-15 16:21:15 |    20001 |     20001 |
+|        5 | 2013-11-26 14:13:08 | 2013-11-26 16:05:42 | done         | 2014-01-14 19:57:29 | 2014-01-15 16:21:12 |    19999 |     19999 |
++----------+---------------------+---------------------+--------------+---------------------+---------------------+----------+-----------+
+
+In this table you will see chunk_from and chunk_to, these are dates that identify the chunk. A chunk_status is added to reflect the status of the chunk. Possible statusses are:
+- new: the chunk is added by the chunk.php script
+- process: the chunk is in process by the analyze.php script
+- done: the chunk is processed.
+
+Another thing to note are the chunk_in and chunk_out counts. They must match :-) The chunk_in count is the number of logins in these chunks as given bij chunk.php. The chunk_out count is the number of processed logins by the analyze.php script. (You may notice that they are not exactly 2000, that's because the boundary of a chunk is in seconds.)
+
+1d. Chunks are internally stored in a hash:
+
+chunks[ID][...]
+
+chunks[1][from]  => 2013-11-26 00:00:00
+chunks[1][to]    => 2013-11-26 09:41:39
+chunks[1][count] => 20003
+
+There is no need to traverse the log_logins at this point. There is only some fiddling with timestamps. 
+
+NOTE: in the mysql queries the LIMIT options is used to get timestamps of every 20.000 chunk. When chunking large logfiles, this LIMIT tends to get slow.
+
+2. analyzing chunks
+
+The analyzing script is a script that spawns a number of processes to process chunks.
+
+2a. the parent process first generates an internal structure of the entities bases on SURFconext entities. These entities are used by all child processess. This reuse of the entities in memory is one of the performance choices.
+
+Entities are structured as:
+
+entities[EID][REVISION][...]
+
+entities[2][0][timestamp]    => 2011-01-20 15:56:33
+entities[2][0][environment]  => P
+entities[2][30][timestamp]   => 2012-07-06 11:34:17
+entities[2][30][environment] => T
+entities[2][31][timestamp]   => 2012-07-06 11:34:30
+entities[2][31][environment] => P
+entities[5][0][timestamp]    => 2011-01-21 11:40:27
+entities[5][0][environment]  => P
+
+There are indexes of SP's and IdP's that point to the entities:
+
+entities_sp_index[https://teams.acc.surfconext.nl/simplesaml/module.php/saml/sp/metadata.php/default-sp] => 2
+entities_sp_index[https://teams.surfconext.nl/simplesaml/module.php/saml/sp/metadata.php/default-sp]     => 2
+entities_sp_index[https://teams.acc.surfconext.nl/shibboleth]                                            => 2
+entities_sp_index[https://teams.surfconext.nl/shibboleth]                                                => 2
+entities_sp_index[https://portal.surfconext.nl/Shibboleth.sso/Metadata]                                  => 5
+entities_sp_index[https://portal.surfconext.nl/shibboleth]                                               => 5
+
+With this structure the spentityid from log_logins can be used to lookup the EID and depending on the timestamp of the login entry, the correct environment is selected.
+
+2b. all 'new' chunks are counted and for each chunk a separate child process is spawned.
+
+2c. the child process starts with reading the actual entries from one chunk from log_logins. There is only one loop over these logins and while reading the entries, the information from the entities (2a) is added. This results in a combined data structure from logins and entities that is ready to be stored in the new database structure. The entry structure is:
+
+entries[ID][...]
+
+entries[1][time]            => 2013-11-26
+entries[1][sp]              => https://iavans.nl/Shibboleth.sso/Metadata
+entries[1][idp]             => https://login.avans.nl/nidp/saml2/metadata
+entries[1][sp_name]         => iAvans portal | Avans
+entries[1][idp_name]        => Avans Hogeschool
+entries[1][sp_eid]          => 476
+entries[1][idp_eid]         => 26
+entries[1][sp_revision]     => 4
+entries[1][idp_revision]    => 143
+entries[1][sp_environment]  => P
+entries[1][idp_environment] => P
+entries[1][count]           => 421
+
+Each entry has a corresponding user hash with unique users
+
+users[ENTRY_ID][ID] = user
+
+users[1][0] => ade63ce849ad860fda825686476d42ef
+users[1][1] => 9dde97a341f051f5e7a3cd94c5cee760
+users[1][2] => 891437406d53eb59e804863da87b1e7c
+
+Not all logins from the chunk result in entries. As you can see in this example this entry was encountered 421 times in the total of 20000 logins of the chunk. This saves 420 updates on this single sp/idp combination. This is one of the reasons while different chunk sizes give different speed results.
+
+2d. The entries are one by one processed and stored in the data structure in this order:
+- update the day table
+- update the provider table
+- update the stats table
+- update the user tabel
+
+Each of the update has basically the same structure:
+- if an entry already exists then update the entry with the counter else insert a new entry
+
+This means that everything is build on the fly. There is no need to fill the day table or SP/IdP tables in advance.
+
+Most important in these updates is the concept of mysql locking. Because several processes do a lot of updates at the same time the locking must prevent duplicate entries and lost entries. Three type of locks are used:
+
+1. row level locking is preffered
+- use SELECT ... FOR UPDATE to get row lock on the selection and update this in the next UPDATE
+2. row level locking on a semaphore row is second, but can only be used with SELECT and INSERT
+- use SELECT ... FROM semaphore_table ... FOR UPDATE
+3. if SELECT, UPDATE and INSERT must be combined in a single transaction, then table locking is required
+- use LOCK TABLES ... 
+
+
+-----------
+PERFORMANCE
+-----------
+As you might have noticed we took several steps to influence performance. Currently the result is:
+- 2222 lines in 1 second
+- 8.000.000 in 1 hour
+- 192.000.000 in 1 day
+
+Test results are from 400.000 loglines processed in 90 seconds by 10 processes with chunks of 20.000 loglines. Tested on my intel i5 laptop with 4 mb RAM running ubuntu 12.04.
+
+This is without modification to the mysql configuration.
+
+
+-------
+TESTING
+-------
+
+To make sure all log_logins are accounted for in the new data structure a test script can be run. It tests the following:
+1. COUNT test: does the log_logins count match the totals in day table and the stats table.
+2. DAY test: does the log_logins count for a day match the single day count
+3. PROVIDER test: are all logins for one sp/idp combination from log_logins accounted for in stats.
+4. PROVIDER / DAY test: same as (3) but counted for one day.
+5. USER test: is the unique number of users consistent with log_logins.
+
+For testing an sp/idp combination (in 3,4 and 5) a random entry is chosen. So running multiple test may show different counters. 
+
+The output shows succes or failure per test and in summary. Output of one test is:
+
+COUNT TEST
+total in: 395300
+total out (day table): 395300
+total out (stats table): 395300
+COUNT TEST: succes
+
+DAY TEST
+day: 2013-11-28
+total in: 122830
+total out: 122830
+DAY TEST: succes
+
+PROVIDER TEST
+sp: google.com/a/avans.nl
+idp: https://login.avans.nl/nidp/saml2/metadata
+total in: 33599
+total out: 33599
+PROVIDER TEST: succes
+
+PROVIDER PER DAY TEST
+day: 2013-11-28
+sp: https://sp.library.wur.nl/shibboleth
+idp: http://sts.wur.nl/adfs/services/trust
+total in: 728
+total out: 728
+PROVIDER PER DAY TEST: succes
+
+USER TEST
+day: 2013-11-28
+sp: https://iavans.nl/Shibboleth.sso/Metadata
+idp: https://login.avans.nl/nidp/saml2/metadata
+total in: 16454
+total out: 16454
+USER TEST: succes
+
+SUMMARY
+number of tests: 5
+test succeses: 5
+test failures: 0
+SUMMARY succes (100%)
