@@ -56,23 +56,23 @@ $count_out_days = getNumberOfEntriesInDay($entry_from, $entry_to);
 $count_out_stats = getNumberOfEntriesInStats($entry_from, $entry_to);
 
 # get number of entries per day
-$day = getRandomEntry($count_in);
+$day = getRandomEntry($count_in, $entry_from." 00:00:00", $entry_to." 23:59:59");
 $count_in_day = getNumberOfEntriesFromLogins($day['timestamp']." 00:00:00", $day['timestamp']." 23:59:59");
 $count_out_day = getNumberOfEntriesInDay($day['timestamp'], $day['timestamp']);
 
 # get number of entries per provider
-$provider = getRandomEntry($count_in);
+$provider = getRandomEntry($count_in, $entry_from." 00:00:00", $entry_to." 23:59:59");
 $count_in_provider = getNumberOfEntriesPerProvider($provider['sp'], $provider['idp'], $entry_from." 00:00:00", $entry_to." 23:59:59", null);
 $count_out_provider = getNumberOfEntriesInStatsPerProvider($provider['sp'], $provider['idp'], $provider['sp_name'], $provider['idp_name'], $entry_from, $entry_to, null);
 
 # get number of entries per provider per day
-$provider_day = getRandomEntry($count_in);
+$provider_day = getRandomEntry($count_in, $entry_from." 00:00:00", $entry_to." 23:59:59");
 $count_in_provider_day = getNumberOfEntriesPerProvider($provider_day['sp'], $provider_day['idp'], $provider_day['timestamp']." 00:00:00", $provider_day['timestamp']." 23:59:59", null);
 $count_out_provider_day = getNumberOfEntriesInStatsPerProvider($provider_day['sp'], $provider_day['idp'], $provider_day['sp_name'], $provider_day['idp_name'], $provider_day['timestamp'], $provider_day['timestamp'], null);
 
 if (! $LA['disable_user_count']) {
 	# get number of unique users per provider per day
-	$user = getRandomEntry($count_in);
+	$user = getRandomEntry($count_in, $entry_from." 00:00:00", $entry_to." 23:59:59");
 	$count_in_user = getNumberOfEntriesPerProvider($user['sp'], $user['idp'], $user['timestamp']." 00:00:00", $user['timestamp']." 23:59:59", "user");
 	$count_out_user = getNumberOfEntriesInStatsPerProvider($user['sp'], $user['idp'], $user['sp_name'], $user['idp_name'], $user['timestamp'], $user['timestamp'], "user");
 }

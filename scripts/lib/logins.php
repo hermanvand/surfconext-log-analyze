@@ -21,13 +21,13 @@ function getTotalNumberOfEntries($from, $to) {
 }
 
 # for test
-function getRandomEntry($max) {
+function getRandomEntry($max, $from, $to) {
     global $LA;
 
 	$offset = rand(1,$max-1);
 	$entry = array();
 
-	$result = mysql_query("SELECT loginstamp,userid,spentityid,idpentityid,spentityname,idpentityname FROM ".$LA['table_logins']." LIMIT ".$offset.",1", $LA['mysql_link']);
+	$result = mysql_query("SELECT loginstamp,userid,spentityid,idpentityid,spentityname,idpentityname FROM ".$LA['table_logins']." WHERE loginstamp BETWEEN '".$from."' AND '".$to."' LIMIT ".$offset.",1", $LA['mysql_link']);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
