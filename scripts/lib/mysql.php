@@ -51,4 +51,13 @@ function checkDateTime($date) {
     }
 }
 
+function checkDateMine($date) {
+    if (date('Y-m-d', strtotime($date)) == $date) {
+        return true;
+    } 
+    else {
+        return false;
+    }
+}
+
 ?>

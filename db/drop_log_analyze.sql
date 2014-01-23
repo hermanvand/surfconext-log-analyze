@@ -1,21 +1,20 @@
+/* Drop procedures */
+drop procedure if exists getUniqueUserCount;
 
-/*
-DROP TABLE IF EXISTS log_analyze_user;
-*/
 
-/* works for testing only */
-DROP TABLE IF EXISTS log_analyze_user__10;
-DROP TABLE IF EXISTS log_analyze_user__9;
-DROP TABLE IF EXISTS log_analyze_user__8;
-DROP TABLE IF EXISTS log_analyze_user__7;
-DROP TABLE IF EXISTS log_analyze_user__6;
-DROP TABLE IF EXISTS log_analyze_user__5;
-DROP TABLE IF EXISTS log_analyze_user__4;
-DROP TABLE IF EXISTS log_analyze_user__3;
-DROP TABLE IF EXISTS log_analyze_user__2;
-DROP TABLE IF EXISTS log_analyze_user__1;
+/* Drop on the fly created tables: log_analyze_user__% */
 
-/* always drop */
+-- Increase memory to avoid truncating string, adjust according to your needs
+SET group_concat_max_len = 1024 * 1024 * 10;
+-- Generate drop command and assign to variable
+SET @dropcmd = (SELECT CONCAT('DROP TABLE IF EXISTS ',GROUP_CONCAT(CONCAT(table_schema,'.',table_name)),';') FROM information_schema.tables WHERE table_schema='surfnet_conext_logfiles' AND table_name LIKE 'log_analyze_user__%');
+-- Drop tables
+PREPARE stmt FROM @dropcmd;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+
+/* Always drop */
 DROP TABLE IF EXISTS log_analyze_semaphore;
 
 DROP TABLE IF EXISTS log_analyze_stats;

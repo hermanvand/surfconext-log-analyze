@@ -131,8 +131,8 @@ to be run in this order (see docs/readme.txt)
 - errors.php (library to deal with program errors and logging)
 - mysql.php (basic mysql functions)
 - la.php (program functions that are used by the scripts, this contains the real deal :-)
-- logins.php (functions for the connection with the SURFconext logins table)
-- entities.php (functions for the connection with the SURFconext entity table)
+- logins.php (functions for the connection with the OpenConext logins table)
+- entities.php (functions for the connection with the OpenConext entity table)
 
 4. var/ consists of 1 file:
 - la.log (the log file, watched it for debugging)

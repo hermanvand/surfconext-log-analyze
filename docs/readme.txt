@@ -1,10 +1,10 @@
-Welcome to the log analyzer of SURFconext logins.
+Welcome to the log analyzer of OpenConext logins.
 
 
 -------
 PURPOSE
 -------
-The purpose of this analyzing program is to convert the logfiles from SURFconext, one big mysql table, to a more suitable form, that can be used as input for statistics.
+The purpose of this analyzing program is to convert the logfiles from OpenConext, one big mysql table, to a more suitable form, that can be used as input for statistics.
 
 There are three main directories
 1. db, with the database scripts to setup mysql
@@ -49,7 +49,7 @@ With this command all chunk created in the first step are converted in the new d
 3. Test your run
 
 command:
-./test.php
+./test.php from=2013-11-26 to=2013-11-28
 
 With this command the main counters and some random loglines are tested for completeness.
 

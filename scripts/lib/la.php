@@ -98,12 +98,12 @@ function LaChunkProcessUpdate($chunk_id, $chunk_logins, $mysql_link) {
 ###############
 
 # for test
-function getTotalNumberOfEntriesInDay() {
+function getNumberOfEntriesInDay($from, $to) {
     global $LA;
 
 	$count = 0;
 
-	$result = mysql_query("SELECT sum(day_logins) as number FROM log_analyze_day", $LA['mysql_link']);
+	$result = mysql_query("SELECT sum(day_logins) as number FROM log_analyze_day WHERE day_day BETWEEN '".$from."' AND '".$to."'", $LA['mysql_link']);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
@@ -114,12 +114,12 @@ function getTotalNumberOfEntriesInDay() {
 }
 
 # for test
-function getNumberOfEntriesInDayPerDay($time) {
+function getNumberOfEntriesInStats($from, $to) {
     global $LA;
 
 	$count = 0;
 
-	$result = mysql_query("SELECT sum(day_logins) as number FROM log_analyze_day WHERE day_day = '".$time."'", $LA['mysql_link']);
+	$result = mysql_query("SELECT sum(stats_logins) as number FROM log_analyze_stats WHERE stats_day_id IN (SELECT day_id FROM log_analyze_day WHERE day_day BETWEEN '".$from."' AND '".$to."')", $LA['mysql_link']);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
@@ -130,31 +130,15 @@ function getNumberOfEntriesInDayPerDay($time) {
 }
 
 # for test
-function getTotalNumberOfEntriesInStats() {
-    global $LA;
-
-	$count = 0;
-
-	$result = mysql_query("SELECT sum(stats_logins) as number FROM log_analyze_stats", $LA['mysql_link']);
-	
-	if (mysql_num_rows($result) == 1) {
-		$result_row = mysql_fetch_assoc($result);
-		$count = $result_row['number'];
-	}
-	
-	return $count;
-}
-
-# for test
-# - time & counter are optional
-function getNumberOfEntriesInStatsPerProvider($sp, $idp, $sp_name, $idp_name, $time, $counter) {
+# - from, to & counter are optional
+function getNumberOfEntriesInStatsPerProvider($sp, $idp, $sp_name, $idp_name, $from, $to, $counter) {
     global $LA;
 
 	$count = 0;
 
 	$extend = ""; 
-	if (isset($time)) {
-		$extend = " AND stats_day_id IN (SELECT day_id FROM log_analyze_day WHERE day_day = '".$time."')";
+	if (isset($from) && isset($to)) {
+		$extend = " AND stats_day_id IN (SELECT day_id FROM log_analyze_day WHERE day_day BETWEEN '".$from."' AND '".$to."')";
 	}
 
 	$selector = "sum(stats_logins)";
@@ -273,7 +257,7 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 		}
 		else {
 			# insert SP
-			$result = mysql_query("INSERT INTO log_analyze_sp VALUES(NULL,'".$entry['sp_name']."',".$entry['sp_eid'].",".$entry['sp_revision'].")", $mysql_link);
+			$result = mysql_query("INSERT INTO log_analyze_sp VALUES(NULL,'".safeInsert($entry['sp_name'])."',".$entry['sp_eid'].",".$entry['sp_revision'].")", $mysql_link);
 			$sp_id = mysql_insert_id();
 			if (mysql_affected_rows() != 1) {
 				catchMysqlError("LaAnalyzeProviderUpdate (SP)", $mysql_link);
@@ -289,7 +273,7 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 		}
 		else {
 			# insert IDP
-			$result = mysql_query("INSERT INTO log_analyze_idp VALUES(NULL,'".$entry['idp_name']."',".$entry['idp_eid'].",".$entry['idp_revision'].")", $mysql_link);
+			$result = mysql_query("INSERT INTO log_analyze_idp VALUES(NULL,'".safeInsert($entry['idp_name'])."',".$entry['idp_eid'].",".$entry['idp_revision'].")", $mysql_link);
 			$idp_id = mysql_insert_id();
 			if (mysql_affected_rows() != 1) {
 				catchMysqlError("LaAnalyzeProviderUpdate (IDP)", $mysql_link);

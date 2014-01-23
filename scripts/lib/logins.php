@@ -5,12 +5,12 @@
 ##############
 
 # for test
-function getTotalNumberOfEntries() {
+function getTotalNumberOfEntries($from, $to) {
     global $LA;
 
 	$count = NULL;
 
-	$result = mysql_query("SELECT count(*) as number FROM ".$LA['table_logins'], $LA['mysql_link']);
+	$result = mysql_query("SELECT count(*) as number FROM ".$LA['table_logins']." WHERE loginstamp BETWEEN '".$from."' AND '".$to."'", $LA['mysql_link']);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
@@ -35,7 +35,7 @@ function getRandomEntry($max) {
 		$timestamp = $dt->format("Y-m-d");
 
 		$entry['timestamp'] = $timestamp;
-		$entry['user'] = $result_row['userid'];
+		$entry['user'] = sha1(trim($result_row['userid'].$LA['anonymous_user_string']));
 		$entry['sp'] = $result_row['spentityid'];
 		$entry['idp'] = $result_row['idpentityid'];
 		$entry['sp_name'] = $result_row['spentityname'];
@@ -229,8 +229,9 @@ function getEntriesFromLogins($from, $to, $mysql_link) {
 			}
 			
 			# always add new users
-			if ((! $LA['disable_user_count']) && (! in_array($result_row['userid'], $users[$entry]))) {
-				$users[$entry][] = trim($result_row['userid']);
+			$newUser = sha1(trim($result_row['userid'].$LA['anonymous_user_string']));
+			if ((! $LA['disable_user_count']) && (! in_array($newUser, $users[$entry]))) {
+				$users[$entry][] = $newUser;
 			}
 
 		}

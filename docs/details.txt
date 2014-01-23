@@ -20,16 +20,16 @@ log_analyze_day example:
 +--------+------------+-----------------+------------+---------------------+---------------------+
 | day_id | day_day    | day_environment | day_logins | day_created         | day_updated         |
 +--------+------------+-----------------+------------+---------------------+---------------------+
-|      1 | 2013-11-26 | P               |     143050 | 2014-01-14 19:58:02 | 2014-01-15 16:21:15 |
-|      2 | 2013-11-26 | T               |         76 | 2014-01-14 19:58:10 | 2014-01-15 16:21:15 |
-|      3 | 2013-11-27 | P               |     129307 | 2014-01-15 16:20:09 | 2014-01-15 16:22:12 |
+|      1 | 2013-11-26 | PA              |     143050 | 2014-01-14 19:58:02 | 2014-01-15 16:21:15 |
+|      2 | 2013-11-26 | TA              |         76 | 2014-01-14 19:58:10 | 2014-01-15 16:21:15 |
+|      3 | 2013-11-27 | PA              |     129307 | 2014-01-15 16:20:09 | 2014-01-15 16:22:12 |
 |      4 | 2013-11-26 | U               |          4 | 2014-01-15 16:20:43 | 2014-01-15 16:21:07 |
-|      5 | 2013-11-27 | T               |         33 | 2014-01-15 16:20:50 | 2014-01-15 16:22:11 |
+|      5 | 2013-11-27 | TA              |         33 | 2014-01-15 16:20:50 | 2014-01-15 16:22:11 |
 +--------+------------+-----------------+------------+---------------------+---------------------+
 
 For each day you will see three entries based on the environment the entry was from. 
-- P = Production 
-- T = Test
+- PA = Production Accepted (derived from janus: prodaccepted)
+- TA = Test Accepted (derived from janus: testaccepted)
 - U = Unknown (Unknown entries are entries wihtout a valid SP or IdP.)
 
 From this table you can immediately read the total day_logins. Monthly and/or yearly stats are simple 'sums' based on the DATE day_day.
@@ -70,9 +70,9 @@ log_analyze_idp_example:
 |      5 | RUG                        |      15 |           90 |
 +--------+----------------------------+---------+--------------+ 
 
-In these two tables you see the name of the SP/IdP and the unique entity. The entity is uniquely identified by an eid AND a revision in SURFconext.
+In these two tables you see the name of the SP/IdP and the unique entity. The entity is uniquely identified by an eid AND a revision in OpenConext.
 
-entities with eid=0 are 'Unknown' entities found in the logins, but not present (any more) in SURFconext.
+entities with eid=0 are 'Unknown' entities found in the logins, but not present (any more) in OpenConext.
 
 
 log_analyze_stats example:
@@ -108,6 +108,18 @@ This is part of the unique user table for day_id 1. The unique users are stored 
 
 SELECT count(distinct(user_name)) FROM log_analyze_user__1
 
+To get the disctinct user count over multiple days you can use the stored procedure: getUniqueUserCount($FROM, $TO, $ENVIRONMENT).
+
+Use:
+call getUniqueUserCount("2013-11-26","2013-11-28","PA");
+
+This is the result: 
++------------+
+| user_count |
++------------+
+|     114057 |
++------------+
+	
 
 This is the data you will be using most. Hope you like it!
 
@@ -165,20 +177,20 @@ NOTE: in the mysql queries the LIMIT options is used to get timestamps of every 
 
 The analyzing script is a script that spawns a number of processes to process chunks.
 
-2a. the parent process first generates an internal structure of the entities bases on SURFconext entities. These entities are used by all child processess. This reuse of the entities in memory is one of the performance choices.
+2a. the parent process first generates an internal structure of the entities bases on OpenConext entities. These entities are used by all child processess. This reuse of the entities in memory is one of the performance choices.
 
 Entities are structured as:
 
 entities[EID][REVISION][...]
 
 entities[2][0][timestamp]    => 2011-01-20 15:56:33
-entities[2][0][environment]  => P
+entities[2][0][environment]  => PA
 entities[2][30][timestamp]   => 2012-07-06 11:34:17
-entities[2][30][environment] => T
+entities[2][30][environment] => TA
 entities[2][31][timestamp]   => 2012-07-06 11:34:30
-entities[2][31][environment] => P
+entities[2][31][environment] => PA
 entities[5][0][timestamp]    => 2011-01-21 11:40:27
-entities[5][0][environment]  => P
+entities[5][0][environment]  => PA
 
 There are indexes of SP's and IdP's that point to the entities:
 
@@ -206,8 +218,8 @@ entries[1][sp_eid]          => 476
 entries[1][idp_eid]         => 26
 entries[1][sp_revision]     => 4
 entries[1][idp_revision]    => 143
-entries[1][sp_environment]  => P
-entries[1][idp_environment] => P
+entries[1][sp_environment]  => PA
+entries[1][idp_environment] => PA
 entries[1][count]           => 421
 
 Each entry has a corresponding user hash with unique users
@@ -266,6 +278,10 @@ To make sure all log_logins are accounted for in the new data structure a test s
 5. USER test: is the unique number of users consistent with log_logins.
 
 For testing an sp/idp combination (in 3,4 and 5) a random entry is chosen. So running multiple test may show different counters. 
+
+The test script must be started with a 'from' and 'to' argument to be able to process pieces of 1 log_logins table. 
+
+./test.php from=2013-11-26 to=2013-11-28
 
 The output shows succes or failure per test and in summary. Output of one test is:
 

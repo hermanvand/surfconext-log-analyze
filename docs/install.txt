@@ -1,4 +1,4 @@
-This is the installation document of the log analyzer for SURFconext logins
+This is the installation document of the log analyzer for OpenConext logins
 
 You already unpacked the tarball :-) 
 There are a couple of steps to take to get the database up and running.
@@ -14,12 +14,12 @@ Make sure you create a database with:
 
 
 ------------------------
-IMPORT SURFconext TABLES
+IMPORT OpenConext TABLES
 ------------------------
-Two tables from SURFconext needs to be imported in your new database.
+Two tables from OpenConext needs to be imported in your new database.
 
-1. log_logins. The actual SURFconext logfile
-2. janus__entity. The SP & IDP entity file from the SURFconext configuration.
+1. log_logins. The actual OpenConext logfile
+2. janus__entity. The SP & IDP entity file from the OpenConext configuration.
 
 
 ------------------
@@ -53,6 +53,8 @@ This is a snippet from the configuration file of these settings:
 IMPORT DATABASE SCHEMA
 ----------------------
 Goto the directory db/
+
+NOTE: edit drop_log_analyze.sql and change "table_schema='surfnet_conext_logfiles'" in "table_schema='DB_NAME'", so the script can remove all tables from your database.
 
 clean the database
 mysql -u USER --password=PASS DB_NAME < drop_log_analyze.sql

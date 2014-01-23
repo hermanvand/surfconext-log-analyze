@@ -32,10 +32,10 @@ function getAllEntities() {
 			$timestamp = $dt->format("Y-m-d H:i:s");
 
 			if ($result_row['state'] == "prodaccepted") {
-				$environment = "P";
+				$environment = "PA";
 			}
 			else {
-				$environment = "T";
+				$environment = "TA";
 			}
 
 			if ($result_row['type'] == "saml20-sp") {
