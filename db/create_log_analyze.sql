@@ -80,6 +80,7 @@ INSERT INTO log_analyze_semaphore VALUES(1,"provider",1);
 INSERT INTO log_analyze_semaphore VALUES(2,"unknownSP",1);
 INSERT INTO log_analyze_semaphore VALUES(3,"unknownIDP",1);
 INSERT INTO log_analyze_semaphore VALUES(4,"user",1);
+INSERT INTO log_analyze_semaphore VALUES(5,"day",1);
 
 /* obsolete: creating user tables on the fly (per day)
 CREATE TABLE log_analyze_user (

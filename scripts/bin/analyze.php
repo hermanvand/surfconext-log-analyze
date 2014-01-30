@@ -134,7 +134,9 @@ while ($numberOfChunks > 0) {
 			# - $entries[$entry]['idp_environment']
 			# - $entries[$entry]['count']
 			foreach ($entries as $key => $entry) {
-				# first, check the day
+				# first, check the day 
+				# - note: two steps to make locking easier and faster
+				$day_status = LaAnalyzeDayInsert($entry['time'],$entry['sp_environment'],$child_link);
 				$day_id = LaAnalyzeDayUpdate($entry['time'],$entry['sp_environment'],$entry['count'],$child_link);
 				
 				# second, check the SP and IDP

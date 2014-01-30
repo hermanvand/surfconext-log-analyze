@@ -170,23 +170,61 @@ function getNumberOfEntriesInStatsPerProvider($sp, $idp, $sp_name, $idp_name, $f
 #####################
 
 ### Day ###
+function LaAnalyzeDayInsert($day, $environment, $mysql_link) {
+    global $LA;
+
+	$day_id = 0;
+	$status = 1;
+	$timestamp = date("Y-m-d H:i:s");
+	$user_table = "";
+	
+	# starting a transaction
+	mysql_query("START TRANSACTION", $mysql_link);
+	# use semaphore to prevent duplicate inserts
+	mysql_query("SELECT semaphore_id FROM log_analyze_semaphore WHERE semaphore_name = 'day' LIMIT 1 FOR UPDATE", $mysql_link);
+
+	# try to get id
+	$result = mysql_query("SELECT day_id FROM log_analyze_day WHERE day_day = '".$day."' AND day_environment = '".$environment."' LIMIT 1", $mysql_link);
+	
+	if (mysql_num_rows($result) != 1) {
+		# insert day
+		$result = mysql_query("INSERT INTO log_analyze_day VALUES(NULL,'".$day."','".$environment."',0,'".$timestamp."','".$timestamp."')", $mysql_link);
+		$day_id = mysql_insert_id();
+		if (mysql_affected_rows() != 1) {
+			catchMysqlError("LaAnalyzeDayInsert", $mysql_link);
+			$status = 0;
+		}
+		
+		# create user table for this day, later...
+		$user_table = "log_analyze_user__".$day_id;
+	}
+
+	# 'insert' done
+	mysql_query("UPDATE log_analyze_semaphore SET semaphore_value = 1 WHERE semaphore_name = 'day'", $mysql_link);
+	mysql_query("COMMIT", $mysql_link);
+
+	# create user table after update...
+	if ((! $LA['disable_user_count']) && ($user_table != "")) {
+		$result = mysql_query("CREATE TABLE ".$user_table." (user_day_id INT NOT NULL,user_provider_id INT NOT NULL,user_name VARCHAR(128) DEFAULT NULL,PRIMARY KEY (user_day_id,user_provider_id,user_name)) ENGINE=InnoDB", $mysql_link);
+		if (! $result) {
+			catchMysqlError("LaAnalyzeDayUpdate (CREATE USER TABLE)", $mysql_link);
+		}
+	}
+
+	return $status;
+}
+
 function LaAnalyzeDayUpdate($day, $environment, $logins, $mysql_link) {
     global $LA;
 
 	$day_id = 0;
 	$timestamp = date("Y-m-d H:i:s");
-	$user_table = "";
 	
-	# starting a transaction
-	# - lock using 'for update' on the selection of the row does not work with the next insert :-(
-	# - so lock entire table...
+	# starting a transaction and lock using 'for update' on the selection of the row.
 	mysql_query("START TRANSACTION", $mysql_link);
-	# should be autocommit instead of transaction according to the manual, but data gets messed up :-(
-	# mysql_query("SET autocommit=0", $mysql_link);
-	mysql_query("LOCK TABLES log_analyze_day WRITE", $mysql_link);
 	
 	# get id
-	$result = mysql_query("SELECT day_id,day_logins FROM log_analyze_day WHERE day_day = '".$day."' AND day_environment = '".$environment."' LIMIT 1", $mysql_link);
+	$result = mysql_query("SELECT day_id,day_logins FROM log_analyze_day WHERE day_day = '".$day."' AND day_environment = '".$environment."' LIMIT 1 FOR UPDATE", $mysql_link);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
@@ -199,29 +237,9 @@ function LaAnalyzeDayUpdate($day, $environment, $logins, $mysql_link) {
 			catchMysqlError("LaAnalyzeDayUpdate (UPDATE)", $mysql_link);
 		}
 	}
-	else {
-		# insert day
-		$result = mysql_query("INSERT INTO log_analyze_day VALUES(NULL,'".$day."','".$environment."',".$logins.",'".$timestamp."','".$timestamp."')", $mysql_link);
-		$day_id = mysql_insert_id();
-		if (mysql_affected_rows() != 1) {
-			catchMysqlError("LaAnalyzeDayUpdate (INSERT)", $mysql_link);
-		}
-		
-		# create user table for this day, later...
-		$user_table = "log_analyze_user__".$day_id;
-	}
 
-	# 'update' or 'insert' done, unlock tables
+	# 'update' done
 	mysql_query("COMMIT", $mysql_link);
-	mysql_query("UNLOCK TABLES", $mysql_link);
-
-	# create user table after unlocking other tables...
-	if ((! $LA['disable_user_count']) && ($user_table != "")) {
-		$result = mysql_query("CREATE TABLE ".$user_table." (user_day_id INT NOT NULL,user_provider_id INT NOT NULL,user_name VARCHAR(128) DEFAULT NULL,PRIMARY KEY (user_day_id,user_provider_id,user_name)) ENGINE=InnoDB", $mysql_link);
-		if (! $result) {
-			catchMysqlError("LaAnalyzeDayUpdate (CREATE USER TABLE)", $mysql_link);
-		}
-	}
 
 	return $day_id;
 }
@@ -382,39 +400,17 @@ function LaAnalyzeStatsUpdate($day_id, $provider_id, $logins, $mysql_link) {
 	$status = 1;
 	
 	# starting a transaction
-	# - lock using 'for update' on the selection of the row does not work with the next insert :-(
-	# - so lock entire table...
 	mysql_query("START TRANSACTION", $mysql_link);
-	# should be autocommit instead of transaction according to the manual, but data gets messed up :-(
-	# mysql_query("SET autocommit=0", $mysql_link);
-	mysql_query("LOCK TABLES log_analyze_stats WRITE", $mysql_link);
 	
-	# get logins
-	$result = mysql_query("SELECT stats_logins FROM log_analyze_stats WHERE stats_day_id = ".$day_id." AND stats_provider_id = ".$provider_id." LIMIT 1", $mysql_link);
-	
-	if (mysql_num_rows($result) == 1) {
-		$result_row = mysql_fetch_assoc($result);
-		$logins_update = $result_row['stats_logins'] + $logins;
-		
-		# update stats
-		$result = mysql_query("UPDATE log_analyze_stats SET stats_logins = ".$logins_update." WHERE stats_day_id = ".$day_id." AND stats_provider_id = ".$provider_id, $mysql_link);
-		if (mysql_affected_rows() != 1) {
-			catchMysqlError("LaAnalyzeStatsUpdate (UPDATE)", $mysql_link);
-			$status = 0;
-		}
-	}
-	else {
-		# insert stats
-		$result = mysql_query("INSERT INTO log_analyze_stats VALUES(".$day_id.",".$provider_id.",".$logins.",0)", $mysql_link);
-		if (mysql_affected_rows() != 1) {
-			catchMysqlError("LaAnalyzeStatsUpdate (INSERT)", $mysql_link);
-			$status = 0;
-		}
+	# insert or update stats
+	$result = mysql_query("INSERT INTO log_analyze_stats (stats_day_id,stats_provider_id,stats_logins,stats_users) VALUES(".$day_id.",".$provider_id.",".$logins.",0) ON DUPLICATE KEY UPDATE stats_logins = stats_logins + ".$logins, $mysql_link);
+	if (!(mysql_affected_rows() == 1 || mysql_affected_rows() == 2)) {
+		catchMysqlError("LaAnalyzeStatsUpdate (INSERT/UPDATE)", $mysql_link);
+		$status = 0;
 	}
 
-	# 'update' or 'insert' done, unlock tables
+	# 'update' or 'insert' done
 	mysql_query("COMMIT", $mysql_link);
-	mysql_query("UNLOCK TABLES", $mysql_link);
 	
 	return $status;
 }
