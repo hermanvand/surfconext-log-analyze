@@ -45,6 +45,10 @@ function openLogFile($dir) {
     global $LA;
 
     $LA['log_handler'] = fopen($dir.$LA['log_file'], 'a');
+    if (!$LA['log_handler']) {
+        print "Error opening log file {$dir}{$LA['log_file']}\n";
+        exit;
+    }
 }
 
 function closeLogFile() {
