@@ -134,6 +134,11 @@ while ($numberOfChunks > 0) {
 			# - $entries[$entry]['idp_environment']
 			# - $entries[$entry]['count']
 			foreach ($entries as $key => $entry) {
+
+				# ignore entires form blacklisted entityids
+				if ( in_array($entry['sp'], $LA['entity_blacklist']) ||
+				     in_array($entry['idp'],$LA['entity_blacklist']) ) continue; 
+
 				# first, check the day 
 				# - note: two steps to make locking easier and faster
 				$day_status = LaAnalyzeDayInsert($entry['time'],$entry['sp_environment'],$child_link);
