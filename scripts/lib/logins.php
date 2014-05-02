@@ -139,6 +139,7 @@ function getEntriesFromLogins($from, $to, $mysql_link) {
 					if ($first) {
 						$sp_revision = $revision;
 						$sp_environment = $value['environment'];
+						$sp_metadata = $value['metadata'];
 						$first = 0;
 					}
 					else {
@@ -148,6 +149,7 @@ function getEntriesFromLogins($from, $to, $mysql_link) {
 						else {
 							$sp_revision = $revision;
 							$sp_environment = $value['environment'];
+							$sp_metadata = $value['metadata'];
 						}
 					}
 				}
@@ -170,6 +172,7 @@ function getEntriesFromLogins($from, $to, $mysql_link) {
 					if ($first) {
 						$idp_revision = $revision;
 						$idp_environment = $value['environment'];
+						$idp_metadata = $value['metadata'];
 						$first = 0;
 					}
 					else {
@@ -179,6 +182,7 @@ function getEntriesFromLogins($from, $to, $mysql_link) {
 						else {
 							$idp_revision = $revision;
 							$idp_environment = $value['environment'];
+							$idp_metadata = $value['metadata'];
 						}
 					}
 				}
@@ -223,6 +227,8 @@ function getEntriesFromLogins($from, $to, $mysql_link) {
 				$entries[$entry]['idp_revision'] = $idp_revision;
 				$entries[$entry]['sp_environment'] = $sp_environment;
 				$entries[$entry]['idp_environment'] = $idp_environment;
+				$entries[$entry]['sp_metadata'] = $sp_metadata;
+				$entries[$entry]['idp_metadata'] = $idp_metadata;
 				$entries[$entry]['count'] = 1;
 				
 				$users[$entry] = array();

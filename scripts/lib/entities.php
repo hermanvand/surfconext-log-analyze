@@ -4,6 +4,11 @@
 ### ENTITIES ###
 ################
 
+function array_equal($a,$b)
+{
+	return !array_diff_assoc($a,$b) && !array_diff_assoc($b,$a);
+}
+
 function getAllEntities() {
     global $LA;
 
@@ -50,16 +55,42 @@ function getAllEntities() {
 				$entities[$id] = array();
 				$prev_env = "";
 				$prev_name = "";
+				$prev_extra = "";
 			}
 				
+			# fetch requested metadata fields
+			$extra = array();
+			foreach ($LA['extra_metadata'] as $metadata)
+			{
+				$key = $metadata['metadata_key'];
+
+				# check type
+				if ( strncasecmp($metadata['type'], $provider, 1) != 0 ) continue;
+
+				# fetch metadata
+				$result2 = mysql_query("
+					SELECT `value` FROM {$LA['table_metadata']}
+					WHERE (`eid`,`revisionid`) = ({$id},{$revision})
+					AND `key`='{$key}'
+				");
+				if ($result2 && mysql_num_rows($result2)==1) {
+					$result_row = mysql_fetch_array($result2);
+					$value = $result_row[0];
+					$extra[$key] = $value;
+				}
+			}
+
 			# Be smart, only consider revision with changes in environment :-)
-			if ($environment != $prev_env) {
+			if ( $environment != $prev_env || !array_equal($extra,$prev_extra) ) {
 				$entities[$id][$revision] = array();
 				$entities[$id][$revision]['timestamp'] = $timestamp;
 				$entities[$id][$revision]['environment'] = $environment;
-				$prev_env = $environment;
+				$entities[$id][$revision]['metadata'] = $extra;
+
+				$prev_extra = $extra;
+				$prev_env   = $environment;
 			}
-			
+
 			# Be fast, build indexes from name to eid, for both sp & idp :-)
 			if ($name != $prev_name) {		
 				if ( $name != $prev_name ) {

@@ -132,6 +132,8 @@ while ($numberOfChunks > 0) {
 			# - $entries[$entry]['idp_revision']
 			# - $entries[$entry]['sp_environment']
 			# - $entries[$entry]['idp_environment']
+			# - $entries[$entry]['sp_metadata']
+			# - $entries[$entry]['idp_metadata']
 			# - $entries[$entry]['count']
 			foreach ($entries as $key => $entry) {
 

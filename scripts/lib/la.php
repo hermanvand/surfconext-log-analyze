@@ -275,10 +275,20 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 		}
 		else {
 			# insert SP
-			$result = mysql_query("INSERT INTO log_analyze_sp VALUES(NULL,'".safeInsert($entry['sp_name'])."',".$entry['sp_eid'].",".$entry['sp_revision'].")", $mysql_link);
+			$query = "INSERT INTO log_analyze_sp (sp_name,sp_eid,sp_revision) VALUES('".safeInsert($entry['sp_name'])."',".$entry['sp_eid'].",".$entry['sp_revision'].")";
+			$result = mysql_query($query, $mysql_link);
 			$sp_id = mysql_insert_id();
 			if (mysql_affected_rows() != 1) {
 				catchMysqlError("LaAnalyzeProviderUpdate (SP)", $mysql_link);
+			}
+
+			# insert additional metadata
+			foreach ($entry['sp_metadata'] as $key => $value) {
+				$query = "UPDATE log_analyze_sp SET `$key`='$value' WHERE `sp_id`=$sp_id";
+				mysql_query($query, $mysql_link);
+				if (mysql_affected_rows() != 1) {
+					catchMysqlError("LaAnalyzeProviderUpdate (SP extra metadata)", $mysql_link);
+				}
 			}
 		}
 
@@ -291,10 +301,20 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 		}
 		else {
 			# insert IDP
-			$result = mysql_query("INSERT INTO log_analyze_idp VALUES(NULL,'".safeInsert($entry['idp_name'])."',".$entry['idp_eid'].",".$entry['idp_revision'].")", $mysql_link);
+			$query = "INSERT INTO log_analyze_idp (idp_name,idp_eid,idp_revision) VALUES('".safeInsert($entry['idp_name'])."',".$entry['idp_eid'].",".$entry['idp_revision'].")";
+			$result = mysql_query($query, $mysql_link);
 			$idp_id = mysql_insert_id();
 			if (mysql_affected_rows() != 1) {
 				catchMysqlError("LaAnalyzeProviderUpdate (IDP)", $mysql_link);
+			}
+
+			# insert additional metadata
+			foreach ($entry['idp_metadata'] as $key => $value) {
+				$query = "UPDATE log_analyze_idp SET `$key`='$value' WHERE `idp_id`=$idp_id";
+				mysql_query($query, $mysql_link);
+				if (mysql_affected_rows() != 1) {
+					catchMysqlError("LaAnalyzeProviderUpdate (IDP extra metadata)", $mysql_link);
+				}
 			}
 		}
 
