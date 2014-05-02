@@ -67,11 +67,11 @@ function log2file($message) {
 
 # error logging
 function echoProgramError($file, $line, $errorNr, $errorTxt) {
-	log2file( "[".$file.":".$line."] Program Error: ".$errorNr.", ".$errorTxt."\n" );
+	log2file( "[".$file.":".$line."] Program Error: ".$errorNr.", ".$errorTxt );
 }
 
 function echoProgramException($file, $line, $errorNr, $errorTxt) {
-	log2file( "[".$file.":".$line."] Program Exception: ".$errorNr.", ".$errorTxt."\n" );
+	log2file( "[".$file.":".$line."] Program Exception: ".$errorNr.", ".$errorTxt );
 }
 
 # mysql logging
