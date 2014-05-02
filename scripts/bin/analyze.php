@@ -63,6 +63,108 @@ function sig_handler ($signo) {
 
 pcntl_signal(SIGCHLD, "sig_handler");
 
+
+##################
+### PROCESSING ###
+##################
+
+function process_chunk($chunk,$db_link)
+{
+	global $LA;
+	$chunk_logins = 0;
+
+	echo "processing chunk: ".$chunk['id']."\n";
+	list($entries,$users) = getEntriesFromLogins($chunk['from'],$chunk['to'],$db_link);
+
+	# entry fields to process
+	# - $entries[$entry]['time']
+	# - $entries[$entry]['sp']
+	# - $entries[$entry]['idp']
+	# - $entries[$entry]['sp_name']
+	# - $entries[$entry]['idp_name']
+	# - $entries[$entry]['sp_eid']
+	# - $entries[$entry]['idp_eid']
+	# - $entries[$entry]['sp_revision']
+	# - $entries[$entry]['idp_revision']
+	# - $entries[$entry]['sp_environment']
+	# - $entries[$entry]['idp_environment']
+	# - $entries[$entry]['sp_metadata']
+	# - $entries[$entry]['idp_metadata']
+	# - $entries[$entry]['count']
+	foreach ($entries as $key => $entry) {
+
+		# ignore entires form blacklisted entityids
+		if ( in_array($entry['sp'], $LA['entity_blacklist']) ||
+			in_array($entry['idp'],$LA['entity_blacklist']) ) continue; 
+
+		# first, check the day 
+		# - note: two steps to make locking easier and faster
+		$day_status = LaAnalyzeDayInsert($entry['time'],$entry['sp_environment'],$db_link);
+		$day_id = LaAnalyzeDayUpdate($entry['time'],$entry['sp_environment'],$entry['count'],$db_link);
+
+		# second, check the SP and IDP
+		$provider_id = LaAnalyzeProviderUpdate($entry,$db_link);
+
+		# third, update the main table with login count
+		$stats_status = LaAnalyzeStatsUpdate($day_id,$provider_id,$entry['count'],$db_link);
+
+		# fourth, update users table & update main table with new user count
+		# - note, this might be the performance killer...
+		if (! $LA['disable_user_count']) {
+			$chunk_users = LaAnalyzeUserUpdate($day_id,$provider_id,$users[$key],$db_link);
+			if ($chunk_users > 0) {
+				$stats_status = LaAnalyzeStatsUpdateUser($day_id,$provider_id,$chunk_users,$db_link);
+			}
+		}
+
+		$chunk_logins = $chunk_logins + $entry['count'];
+	}
+	return $chunk_logins;
+}
+
+function run_child()
+{
+	global $LA;
+
+	##################
+	### CHILD init ###
+	##################
+
+	$time_start = microtime(true);
+	$child_link = openChildMysqlDb("DB");
+
+	##################
+	### CHILD main ###
+	##################
+
+	$chunk = LaChunkNewGet($child_link);
+	if (isset($chunk['id'])) {
+		$chunk_logins = process_chunk($chunk,$child_link);
+		$done_status = LaChunkProcessUpdate($chunk['id'], $chunk_logins, $child_link);
+	}
+	else {
+		echo "WARNING: no chunk processed\n";
+	}
+
+	###################
+	### CHILD close ###
+	###################
+
+	closeChildMysqlDb($child_link);
+	$time_end = microtime(true);
+
+	# keep track of child times
+	$time_play = $time_end - $time_start;
+	if ($time_play > $LA['max_allowed_process_time']) {
+		log2file("WARNING: process time exceeded: ".$time_play);
+	}
+
+	# clean exit of child
+	sleep(1);
+	exit(0);
+}
+
+
 ############
 ### MAIN ###
 ############
@@ -102,92 +204,7 @@ while ($numberOfChunks > 0) {
 	}
 	else {
 		# child
-
-		##################
-		### CHILD init ###
-		##################
-
-		$time_start = microtime(true);
-		$child_link = openChildMysqlDb("DB");
-		$chunk_logins = 0;
-
-		##################
-		### CHILD main ###
-		##################
-		
-		$chunk = LaChunkNewGet($child_link);
-		if (isset($chunk['id'])) {
-			echo "processing chunk: ".$chunk['id']."\n";
-			list($entries,$users) = getEntriesFromLogins($chunk['from'],$chunk['to'],$child_link);
-
-			# entry fields to process
-			# - $entries[$entry]['time']
-			# - $entries[$entry]['sp']
-			# - $entries[$entry]['idp']
-			# - $entries[$entry]['sp_name']
-			# - $entries[$entry]['idp_name']
-			# - $entries[$entry]['sp_eid']
-			# - $entries[$entry]['idp_eid']
-			# - $entries[$entry]['sp_revision']
-			# - $entries[$entry]['idp_revision']
-			# - $entries[$entry]['sp_environment']
-			# - $entries[$entry]['idp_environment']
-			# - $entries[$entry]['sp_metadata']
-			# - $entries[$entry]['idp_metadata']
-			# - $entries[$entry]['count']
-			foreach ($entries as $key => $entry) {
-
-				# ignore entires form blacklisted entityids
-				if ( in_array($entry['sp'], $LA['entity_blacklist']) ||
-				     in_array($entry['idp'],$LA['entity_blacklist']) ) continue; 
-
-				# first, check the day 
-				# - note: two steps to make locking easier and faster
-				$day_status = LaAnalyzeDayInsert($entry['time'],$entry['sp_environment'],$child_link);
-				$day_id = LaAnalyzeDayUpdate($entry['time'],$entry['sp_environment'],$entry['count'],$child_link);
-				
-				# second, check the SP and IDP
-				$provider_id = LaAnalyzeProviderUpdate($entry,$child_link);
-				
-				# third, update the main table with login count
-				$stats_status = LaAnalyzeStatsUpdate($day_id,$provider_id,$entry['count'],$child_link);
-			
-				# fourth, update users table & update main table with new user count
-				# - note, this might be the performance killer...
-				if (! $LA['disable_user_count']) {
-					$chunk_users = LaAnalyzeUserUpdate($day_id,$provider_id,$users[$key],$child_link);
-					if ($chunk_users > 0) {
-						$stats_status = LaAnalyzeStatsUpdateUser($day_id,$provider_id,$chunk_users,$child_link);
-					}
-				}
-				
-				$chunk_logins = $chunk_logins + $entry['count'];
-			}
-
-			# chunk done
-			$done_status = LaChunkProcessUpdate($chunk['id'], $chunk_logins, $child_link);
-			
-		}
-		else {
-			echo "WARNING: no chunk processed\n";
-		}
-		
-		###################
-		### CHILD close ###
-		###################
-		
-		closeChildMysqlDb($child_link);
-		$time_end = microtime(true);
-
-		# keep track of child times
-		$time_play = $time_end - $time_start;
-		if ($time_play > $LA['max_allowed_process_time']) {
-			log2file("WARNING: process time exceeded: ".$time_play);
-		}
-
-		# clean exit of child
-		sleep(1);
-		exit(0);
+		run_child();
 	}
 
 	# run maximum number of processes
