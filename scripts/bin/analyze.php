@@ -68,7 +68,7 @@ pcntl_signal(SIGCHLD, "sig_handler");
 ### PROCESSING ###
 ##################
 
-function process_chunk($chunk,$db_link)
+function processChunk($chunk,$db_link)
 {
 	global $LA;
 	$chunk_logins = 0;
@@ -122,7 +122,7 @@ function process_chunk($chunk,$db_link)
 	return $chunk_logins;
 }
 
-function run_child()
+function runChild()
 {
 	global $LA;
 
@@ -139,7 +139,7 @@ function run_child()
 
 	$chunk = LaChunkNewGet($child_link);
 	if (isset($chunk['id'])) {
-		$chunk_logins = process_chunk($chunk,$child_link);
+		$chunk_logins = processChunk($chunk,$child_link);
 		$done_status = LaChunkProcessUpdate($chunk['id'], $chunk_logins, $child_link);
 	}
 	else {
@@ -204,7 +204,7 @@ while ($numberOfChunks > 0) {
 	}
 	else {
 		# child
-		run_child();
+		runChild();
 	}
 
 	# run maximum number of processes
