@@ -59,7 +59,7 @@ function LaChunkNewGet($mysql_link) {
 	# get id
 	$result = mysql_query("SELECT chunk_id,chunk_from,chunk_to FROM log_analyze_chunk WHERE chunk_status = 'new' LIMIT 1 FOR UPDATE", $mysql_link);
 	
-	if (mysql_num_rows($result) == 1) {
+	if ($result && mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
 		$chunk['id'] = $result_row['chunk_id'];
 		$chunk['from'] = $result_row['chunk_from'];
@@ -86,7 +86,7 @@ function LaChunkProcessUpdate($chunk_id, $chunk_logins, $mysql_link) {
 
 	$result = mysql_query("UPDATE log_analyze_chunk SET chunk_status = 'done', chunk_updated = '".$timestamp."', chunk_out = ".$chunk_logins." WHERE chunk_id = ".$chunk_id, $mysql_link);
 	if (mysql_affected_rows() != 1) {
-		catchMysqlError("LaChunkNewGet", $mysql_link);
+		catchMysqlError("LaChunkProcessUpdate ($query)", $mysql_link);
 		$status = 0;
 	}
 	
