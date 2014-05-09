@@ -16,6 +16,7 @@ $script_root .= "/..";
 # read config & libs
 require $script_root."/etc/config.php";
 require $script_root."/lib/libs.php";
+require $script_root."/lib/aggregate.php";
 global $LA;
 
 # open log
@@ -29,6 +30,9 @@ $currentProcesses = array();
 $entities = array();
 $entities_sp_index = array();
 $entities_idp_index = array();
+
+# file with info about processed chunks
+$chunk_info_file = tempnam(sys_get_temp_dir(),'la_chunk_');
 
 ###############
 ### SIGNALS ###
@@ -125,6 +129,7 @@ function processChunk($chunk,$db_link)
 function runChild()
 {
 	global $LA;
+	global $chunk_info_file;
 
 	##################
 	### CHILD init ###
@@ -141,6 +146,7 @@ function runChild()
 	if (isset($chunk['id'])) {
 		$chunk_logins = processChunk($chunk,$child_link);
 		$done_status = LaChunkProcessUpdate($chunk['id'], $chunk_logins, $child_link);
+		agSaveChunkInfo($chunk_info_file,$chunk);
 	}
 	else {
 		echo "WARNING: no chunk processed\n";
@@ -234,5 +240,6 @@ log2file("End processing ".$total_numberOfChunks." chunks in ".$total_time_play.
 
 # close log
 closeLogFile();
+unlink($chunk_info_file);
 
 ?>
