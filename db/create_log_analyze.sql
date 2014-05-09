@@ -95,22 +95,13 @@ CREATE TABLE `log_analyze_period` (
 	KEY (`period_environment`)
 );
 
-/* obsolete: creating user tables on the fly (per day)
-CREATE TABLE log_analyze_user (
-	user_day_id INT NOT NULL,
-	user_provider_id INT NOT NULL,
-	user_name VARCHAR(128) DEFAULT NULL,
-	PRIMARY KEY (user_day_id,user_provider_id,user_name)
-) ENGINE=InnoDB; 
-*/
-
 /* creating stored procedure to get unique user count over multiple days */
 
 DELIMITER //
 CREATE PROCEDURE getUniqueUserCount (IN fromDay DATE, IN toDay DATE, IN environment VARCHAR(8))
     BEGIN
 		SET group_concat_max_len = 1024 * 1024 * 10;
-		SET @a = (select group_concat('select * from log_analyze_user__' , day_id SEPARATOR ' UNION ') from log_analyze_day where (day_day BETWEEN fromDay AND toDay) AND (day_environment = environment) );
+		SET @a = (select group_concat('select * from log_analyze_days__' , day_id SEPARATOR ' UNION ') from log_analyze_day where (day_day BETWEEN fromDay AND toDay) AND (day_environment = environment) );
 		SET @x := CONCAT('select count(distinct(user_name)) as user_count from ( ', @a, ' ) e');
 		Prepare stmt FROM @x;
 		Execute stmt;

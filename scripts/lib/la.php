@@ -198,7 +198,7 @@ function LaAnalyzeDayInsert($day, $environment, $mysql_link) {
 		}
 		
 		# create user table for this day, later...
-		$user_table = "log_analyze_user__".$day_id;
+		$user_table = "log_analyze_days__".$day_id;
 	}
 
 	# 'insert' done
@@ -476,7 +476,7 @@ function LaAnalyzeUserUpdate($day_id, $provider_id, $users, $mysql_link) {
 
 	$user_count = 0;
 	$user_list = array();
-	$user_table = "log_analyze_user__".$day_id;
+	$user_table = "log_analyze_days__".$day_id;
 
 	# starting a transaction and lock with the semaphore
 	mysql_query("START TRANSACTION", $mysql_link);

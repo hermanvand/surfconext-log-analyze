@@ -123,7 +123,7 @@ function agHandlePeriod($day_id,$env,$period_type,$period,$period_year)
 		INSERT IGNORE INTO `log_analyze_periods__{$period_id}` 
 		(`provider_id`,`name`)
 		SELECT `user_provider_id`,`user_name` 
-			FROM `log_analyze_user__{$day_id}`
+			FROM `log_analyze_days__{$day_id}`
 	";
 	$result = mysql_query($q,$con);
 	if (!$result) {
