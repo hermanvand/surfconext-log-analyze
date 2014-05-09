@@ -133,6 +133,7 @@ function getEntriesFromLogins($from, $to, $mysql_link) {
 			}
 			$sp_revision = -1;
 			$sp_environment = "";
+			$sp_metadata = array();
 			if ($sp_eid != 0) {
 				$first = 1;
 				foreach ($entities[$sp_eid] as $revision => $value) {
@@ -166,6 +167,7 @@ function getEntriesFromLogins($from, $to, $mysql_link) {
 			}
 			$idp_revision = -1;
 			$idp_environment = "";
+			$idp_metadata = array();
 			if ($idp_eid != 0) {
 				$first = 1;
 				foreach ($entities[$idp_eid] as $revision => $value) {
