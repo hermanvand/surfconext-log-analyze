@@ -238,7 +238,21 @@ $total_time_end = microtime(true);
 $total_time_play = $total_time_end - $total_time_start;
 log2file("End processing ".$total_numberOfChunks." chunks in ".$total_time_play." seconds.");
 
-# close log
+##################
+### AGGREGRATE ###
+##################
+log2file("Starting aggregation");
+$total_time_start = microtime(true);
+
+openMysqlDb("DB");
+$num_days = agAggregate($chunk_info_file);
+closeMysqlDb();
+
+$total_time_end = microtime(true);
+$total_time_play = $total_time_end - $total_time_start;
+log2file("End aggregation ".$num_days." days processed in ".$total_time_play." seconds.");
+
+# clean up
 closeLogFile();
 unlink($chunk_info_file);
 
