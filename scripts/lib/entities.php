@@ -4,6 +4,41 @@
 ### ENTITIES ###
 ################
 
+# adjust log_analyze_idp and log_analyze_sp tables to store the custom metadata 
+# defined in la.ini
+function fixIdPSPTables()
+{
+	global $LA;
+
+	foreach ($LA['extra_metadata'] as $metadata)
+	{
+		$key = $metadata['metadata_key'];
+
+		# check type
+		if ( strncasecmp($metadata['type'], 'idp', 1) == 0 ) {
+			# IdP
+			$q = "ALTER TABLE `log_analyze_idp` ADD COLUMN `$key` TEXT DEFAULT NULL";
+		}
+		elseif ( strncasecmp($metadata['type'], 'sp', 1) == 0 ) {
+			# SP
+			$q = "ALTER TABLE `log_analyze_sp` ADD COLUMN `$key` TEXT DEFAULT NULL";
+		}
+		else
+		{
+			log2file("Unknown entity type {$metadata['type']} in config for additional metadata");
+			continue;
+		}
+
+		$result = mysql_query($q,$LA['mysql_link']);
+		# duplicate column (error 1060) is actually ok, as it implies the 
+		# column already exists
+		if (!$result && mysql_errno()!=1060) {
+			catchMysqlError("fixIdPSPTables ($q)", $LA['mysql_link']);
+		}
+	}
+}
+
+
 function array_equal($a,$b)
 {
 	return !array_diff_assoc($a,$b) && !array_diff_assoc($b,$a);

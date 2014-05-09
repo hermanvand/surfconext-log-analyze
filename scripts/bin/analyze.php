@@ -173,6 +173,7 @@ function runChild()
 openMysqlDb("DB");
 $numberOfChunks = LaChunkNewCount();
 list($entities,$entities_sp_index,$entities_idp_index) = getAllEntities();
+fixIdPSPTables();
 closeMysqlDb();
 
 # check for a max
