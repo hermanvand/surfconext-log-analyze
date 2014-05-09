@@ -361,7 +361,7 @@ function LaAnalyzeUnknownSPUpdate($sp_name, $mysql_link) {
 			$sp_revision = $result_row['max_sp_revision'] + 1;
 		}
 		# insert SP
-		$result = mysql_query("INSERT INTO log_analyze_sp VALUES(NULL,'".$sp_name."',0,".$sp_revision.")", $mysql_link);
+		$result = mysql_query("INSERT INTO log_analyze_sp (sp_name,sp_eid,sp_revision) VALUES('".$sp_name."',0,".$sp_revision.")", $mysql_link);
 		$sp_id = mysql_insert_id();
 		if (mysql_affected_rows() != 1) {
 			catchMysqlError("LaAnalyzeUnknownSPUpdate", $mysql_link);
@@ -401,7 +401,7 @@ function LaAnalyzeUnknownIDPUpdate($idp_name, $mysql_link) {
 			$idp_revision = $result_row['max_idp_revision'] + 1;
 		}
 		# insert IDP
-		$result = mysql_query("INSERT INTO log_analyze_idp VALUES(NULL,'".$idp_name."',0,".$idp_revision.")", $mysql_link);
+		$result = mysql_query("INSERT INTO log_analyze_idp (idp_name,idp_eid,idp_revision) VALUES('".$idp_name."',0,".$idp_revision.")", $mysql_link);
 		$idp_id = mysql_insert_id();
 		if (mysql_affected_rows() != 1) {
 			catchMysqlError("LaAnalyzeUnknownIDPUpdate", $mysql_link);
