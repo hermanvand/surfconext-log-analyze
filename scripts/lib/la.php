@@ -66,9 +66,10 @@ function LaChunkNewGet($mysql_link) {
 		$chunk['to'] = $result_row['chunk_to'];
 	
 		# update status
-		$result = mysql_query("UPDATE log_analyze_chunk SET chunk_status = 'process', chunk_updated = '".$timestamp."' WHERE chunk_id = ".$chunk['id'], $mysql_link);
+		$query = "UPDATE log_analyze_chunk SET chunk_status = 'process', chunk_updated = '".$timestamp."' WHERE chunk_id = ".$chunk['id'];
+		$result = mysql_query($query, $mysql_link);
 		if (mysql_affected_rows() != 1) {
-			catchMysqlError("LaChunkNewGet", $mysql_link);
+			catchMysqlError("LaChunkNewGet ($query): ".mysql_affected_rows(), $mysql_link);
 		}
 	}
 	
@@ -84,7 +85,8 @@ function LaChunkProcessUpdate($chunk_id, $chunk_logins, $mysql_link) {
 	$status = 1;
 	$timestamp = date("Y-m-d H:i:s");
 
-	$result = mysql_query("UPDATE log_analyze_chunk SET chunk_status = 'done', chunk_updated = '".$timestamp."', chunk_out = ".$chunk_logins." WHERE chunk_id = ".$chunk_id, $mysql_link);
+	$query = "UPDATE log_analyze_chunk SET chunk_status = 'done', chunk_updated = '".$timestamp."', chunk_out = ".$chunk_logins." WHERE chunk_id = ".$chunk_id;
+	$result = mysql_query($query, $mysql_link);
 	if (mysql_affected_rows() != 1) {
 		catchMysqlError("LaChunkProcessUpdate ($query)", $mysql_link);
 		$status = 0;
