@@ -13,7 +13,7 @@ function LaChunkSave($chunkArray) {
 	foreach ($chunkArray as $chunk) {
 		$result = mysql_query("INSERT INTO log_analyze_chunk VALUES(NULL,'".$chunk['from']."','".$chunk['to']."','new','".$timestamp."',NULL,".$chunk['size'].",NULL)", $LA['mysql_link_stats']);
 		
-		if (mysql_affected_rows($mysql_link) != 1) {
+		if (mysql_affected_rows($LA['mysql_link_stats']) != 1) {
 			$status = 0;
 			catchMysqlError("LaChunkSave", $LA['mysql_link_stats']);
 		}
