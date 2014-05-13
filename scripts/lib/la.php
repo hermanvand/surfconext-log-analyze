@@ -11,11 +11,11 @@ function LaChunkSave($chunkArray) {
 	$timestamp = date("Y-m-d H:i:s");
 
 	foreach ($chunkArray as $chunk) {
-		$result = mysql_query("INSERT INTO log_analyze_chunk VALUES(NULL,'".$chunk['from']."','".$chunk['to']."','new','".$timestamp."',NULL,".$chunk['size'].",NULL)", $LA['mysql_link']);
+		$result = mysql_query("INSERT INTO log_analyze_chunk VALUES(NULL,'".$chunk['from']."','".$chunk['to']."','new','".$timestamp."',NULL,".$chunk['size'].",NULL)", $LA['mysql_link_stats']);
 		
-		if (mysql_affected_rows() != 1) {
+		if (mysql_affected_rows($mysql_link) != 1) {
 			$status = 0;
-			catchMysqlError("LaChunkSave", $LA['mysql_link']);
+			catchMysqlError("LaChunkSave", $LA['mysql_link_stats']);
 		}
 
 	}
@@ -30,7 +30,7 @@ function LaChunkNewCount() {
 
 	$count = 0;
 
-	$result = mysql_query("SELECT count(*) as number FROM log_analyze_chunk WHERE chunk_status = 'new'", $LA['mysql_link']);
+	$result = mysql_query("SELECT count(*) as number FROM log_analyze_chunk WHERE chunk_status = 'new'", $LA['mysql_link_stats']);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
@@ -68,8 +68,8 @@ function LaChunkNewGet($mysql_link) {
 		# update status
 		$query = "UPDATE log_analyze_chunk SET chunk_status = 'process', chunk_updated = '".$timestamp."' WHERE chunk_id = ".$chunk['id'];
 		$result = mysql_query($query, $mysql_link);
-		if (mysql_affected_rows() != 1) {
-			catchMysqlError("LaChunkNewGet ($query): ".mysql_affected_rows(), $mysql_link);
+		if (mysql_affected_rows($mysql_link) != 1) {
+			catchMysqlError("LaChunkNewGet ($query): ".mysql_affected_rows($mysql_link), $mysql_link);
 		}
 	}
 	
@@ -87,7 +87,7 @@ function LaChunkProcessUpdate($chunk_id, $chunk_logins, $mysql_link) {
 
 	$query = "UPDATE log_analyze_chunk SET chunk_status = 'done', chunk_updated = '".$timestamp."', chunk_out = ".$chunk_logins." WHERE chunk_id = ".$chunk_id;
 	$result = mysql_query($query, $mysql_link);
-	if (mysql_affected_rows() != 1) {
+	if (mysql_affected_rows($mysql_link) != 1) {
 		catchMysqlError("LaChunkProcessUpdate ($query)", $mysql_link);
 		$status = 0;
 	}
@@ -105,7 +105,7 @@ function getNumberOfEntriesInDay($from, $to) {
 
 	$count = 0;
 
-	$result = mysql_query("SELECT sum(day_logins) as number FROM log_analyze_day WHERE day_day BETWEEN '".$from."' AND '".$to."'", $LA['mysql_link']);
+	$result = mysql_query("SELECT sum(day_logins) as number FROM log_analyze_day WHERE day_day BETWEEN '".$from."' AND '".$to."'", $LA['mysql_link_stats']);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
@@ -121,7 +121,7 @@ function getNumberOfEntriesInStats($from, $to) {
 
 	$count = 0;
 
-	$result = mysql_query("SELECT sum(stats_logins) as number FROM log_analyze_stats WHERE stats_day_id IN (SELECT day_id FROM log_analyze_day WHERE day_day BETWEEN '".$from."' AND '".$to."')", $LA['mysql_link']);
+	$result = mysql_query("SELECT sum(stats_logins) as number FROM log_analyze_stats WHERE stats_day_id IN (SELECT day_id FROM log_analyze_day WHERE day_day BETWEEN '".$from."' AND '".$to."')", $LA['mysql_link_stats']);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
@@ -148,7 +148,7 @@ function getNumberOfEntriesInStatsPerProvider($sp, $idp, $sp_name, $idp_name, $f
 		$selector = "sum(stats_users)";
 	}
 
-	$result = mysql_query("SELECT ".$selector." as number FROM log_analyze_stats WHERE stats_provider_id IN (SELECT provider_id FROM log_analyze_provider,log_analyze_sp, log_analyze_idp WHERE provider_sp_id = sp_id AND provider_idp_id = idp_id AND sp_name = '".$sp_name."' AND idp_name = '".$idp_name."')".$extend, $LA['mysql_link']);
+	$result = mysql_query("SELECT ".$selector." as number FROM log_analyze_stats WHERE stats_provider_id IN (SELECT provider_id FROM log_analyze_provider,log_analyze_sp, log_analyze_idp WHERE provider_sp_id = sp_id AND provider_idp_id = idp_id AND sp_name = '".$sp_name."' AND idp_name = '".$idp_name."')".$extend, $LA['mysql_link_stats']);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
@@ -156,7 +156,7 @@ function getNumberOfEntriesInStatsPerProvider($sp, $idp, $sp_name, $idp_name, $f
 	}
 	else {
 		# try a 'U' entry...
-		$result = mysql_query("SELECT ".$selector." as number FROM log_analyze_stats WHERE stats_provider_id IN (SELECT provider_id FROM log_analyze_provider,log_analyze_sp, log_analyze_idp WHERE provider_sp_id = sp_id AND provider_idp_id = idp_id AND sp_name = '".$sp."' AND idp_name = '".$idp."')".$extend, $LA['mysql_link']);
+		$result = mysql_query("SELECT ".$selector." as number FROM log_analyze_stats WHERE stats_provider_id IN (SELECT provider_id FROM log_analyze_provider,log_analyze_sp, log_analyze_idp WHERE provider_sp_id = sp_id AND provider_idp_id = idp_id AND sp_name = '".$sp."' AND idp_name = '".$idp."')".$extend, $LA['mysql_link_stats']);
 		
 		if (mysql_num_rows($result) == 1) {
 			$result_row = mysql_fetch_assoc($result);
@@ -187,13 +187,13 @@ function LaAnalyzeDayInsert($day, $environment, $mysql_link) {
 
 	# try to get id
 	$result = mysql_query("SELECT day_id FROM log_analyze_day WHERE day_day = '".$day."' AND day_environment = '".$environment."' LIMIT 1", $mysql_link);
-	
+
 	if (mysql_num_rows($result) != 1) {
 		# insert day
-		$result = mysql_query("INSERT INTO log_analyze_day VALUES(NULL,'".$day."','".$environment."',0,'".$timestamp."','".$timestamp."')", $mysql_link);
-		$day_id = mysql_insert_id();
-		if (mysql_affected_rows() != 1) {
-			catchMysqlError("LaAnalyzeDayInsert", $mysql_link);
+		$result = mysql_query("INSERT INTO log_analyze_day (`day_day`,`day_environment`,`day_created`,`day_updated`) VALUES('".$day."','".$environment."','".$timestamp."','".$timestamp."')", $mysql_link);
+		$day_id = mysql_insert_id($mysql_link);
+		if (mysql_affected_rows($mysql_link) != 1) {
+			catchMysqlError("LaAnalyzeDayInsert ($result): ".mysql_error($mysql_link), $mysql_link);
 			$status = 0;
 		}
 		
@@ -208,8 +208,8 @@ function LaAnalyzeDayInsert($day, $environment, $mysql_link) {
 	# create user table after update...
 	if ((! $LA['disable_user_count']) && ($user_table != "")) {
 		$result = mysql_query("CREATE TABLE ".$user_table." (user_day_id INT NOT NULL,user_provider_id INT NOT NULL,user_name VARCHAR(128) DEFAULT NULL,PRIMARY KEY (user_day_id,user_provider_id,user_name)) ENGINE=InnoDB", $mysql_link);
-		if (! $result) {
-			catchMysqlError("LaAnalyzeDayUpdate (CREATE USER TABLE)", $mysql_link);
+		if (!$result) {
+			catchMysqlError("LaAnalyzeDayInsert (CREATE USER TABLE)", $mysql_link);
 		}
 	}
 
@@ -235,7 +235,7 @@ function LaAnalyzeDayUpdate($day, $environment, $logins, $mysql_link) {
 	
 		# update day
 		$result = mysql_query("UPDATE log_analyze_day SET day_logins = ".$logins_update.", day_updated = '".$timestamp."' WHERE day_id = ".$day_id, $mysql_link);
-		if (mysql_affected_rows() != 1) {
+		if (mysql_affected_rows($mysql_link) != 1) {
 			catchMysqlError("LaAnalyzeDayUpdate (UPDATE)", $mysql_link);
 		}
 	}
@@ -279,8 +279,8 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 			# insert SP
 			$query = "INSERT INTO log_analyze_sp (sp_name,sp_eid,sp_revision) VALUES('".safeInsert($entry['sp_name'])."',".$entry['sp_eid'].",".$entry['sp_revision'].")";
 			$result = mysql_query($query, $mysql_link);
-			$sp_id = mysql_insert_id();
-			if (mysql_affected_rows() != 1) {
+			$sp_id = mysql_insert_id($mysql_link);
+			if (mysql_affected_rows($mysql_link) != 1) {
 				catchMysqlError("LaAnalyzeProviderUpdate (SP)", $mysql_link);
 			}
 
@@ -288,7 +288,7 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 			foreach ($entry['sp_metadata'] as $key => $value) {
 				$query = "UPDATE log_analyze_sp SET `$key`='$value' WHERE `sp_id`=$sp_id";
 				mysql_query($query, $mysql_link);
-				if (mysql_affected_rows() != 1) {
+				if (mysql_affected_rows($mysql_link) != 1) {
 					catchMysqlError("LaAnalyzeProviderUpdate (SP extra metadata)", $mysql_link);
 				}
 			}
@@ -305,8 +305,8 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 			# insert IDP
 			$query = "INSERT INTO log_analyze_idp (idp_name,idp_eid,idp_revision) VALUES('".safeInsert($entry['idp_name'])."',".$entry['idp_eid'].",".$entry['idp_revision'].")";
 			$result = mysql_query($query, $mysql_link);
-			$idp_id = mysql_insert_id();
-			if (mysql_affected_rows() != 1) {
+			$idp_id = mysql_insert_id($mysql_link);
+			if (mysql_affected_rows($mysql_link) != 1) {
 				catchMysqlError("LaAnalyzeProviderUpdate (IDP)", $mysql_link);
 			}
 
@@ -314,7 +314,7 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 			foreach ($entry['idp_metadata'] as $key => $value) {
 				$query = "UPDATE log_analyze_idp SET `$key`='$value' WHERE `idp_id`=$idp_id";
 				mysql_query($query, $mysql_link);
-				if (mysql_affected_rows() != 1) {
+				if (mysql_affected_rows($mysql_link) != 1) {
 					catchMysqlError("LaAnalyzeProviderUpdate (IDP extra metadata)", $mysql_link);
 				}
 			}
@@ -322,8 +322,8 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 
 		# third, insert provider
 		$result = mysql_query("INSERT INTO log_analyze_provider VALUES(NULL,".$sp_id.",".$idp_id.")", $mysql_link);
-		$provider_id = mysql_insert_id();
-		if (mysql_affected_rows() != 1) {
+		$provider_id = mysql_insert_id($mysql_link);
+		if (mysql_affected_rows($mysql_link) != 1) {
 			catchMysqlError("LaAnalyzeProviderUpdate (PROVIDER)", $mysql_link);
 		}
 	}
@@ -362,8 +362,8 @@ function LaAnalyzeUnknownSPUpdate($sp_name, $mysql_link) {
 		}
 		# insert SP
 		$result = mysql_query("INSERT INTO log_analyze_sp (sp_name,sp_eid,sp_revision) VALUES('".$sp_name."',0,".$sp_revision.")", $mysql_link);
-		$sp_id = mysql_insert_id();
-		if (mysql_affected_rows() != 1) {
+		$sp_id = mysql_insert_id($mysql_link);
+		if (mysql_affected_rows($mysql_link) != 1) {
 			catchMysqlError("LaAnalyzeUnknownSPUpdate", $mysql_link);
 		}
 	}
@@ -402,8 +402,8 @@ function LaAnalyzeUnknownIDPUpdate($idp_name, $mysql_link) {
 		}
 		# insert IDP
 		$result = mysql_query("INSERT INTO log_analyze_idp (idp_name,idp_eid,idp_revision) VALUES('".$idp_name."',0,".$idp_revision.")", $mysql_link);
-		$idp_id = mysql_insert_id();
-		if (mysql_affected_rows() != 1) {
+		$idp_id = mysql_insert_id($mysql_link);
+		if (mysql_affected_rows($mysql_link) != 1) {
 			catchMysqlError("LaAnalyzeUnknownIDPUpdate", $mysql_link);
 		}
 	}
@@ -426,7 +426,7 @@ function LaAnalyzeStatsUpdate($day_id, $provider_id, $logins, $mysql_link) {
 	
 	# insert or update stats
 	$result = mysql_query("INSERT INTO log_analyze_stats (stats_day_id,stats_provider_id,stats_logins,stats_users) VALUES(".$day_id.",".$provider_id.",".$logins.",0) ON DUPLICATE KEY UPDATE stats_logins = stats_logins + ".$logins, $mysql_link);
-	if (!(mysql_affected_rows() == 1 || mysql_affected_rows() == 2)) {
+	if (!(mysql_affected_rows($mysql_link) == 1 || mysql_affected_rows($mysql_link) == 2)) {
 		catchMysqlError("LaAnalyzeStatsUpdate (INSERT/UPDATE)", $mysql_link);
 		$status = 0;
 	}
@@ -454,7 +454,7 @@ function LaAnalyzeStatsUpdateUser($day_id, $provider_id, $users, $mysql_link) {
 		
 		# update stats
 		$result = mysql_query("UPDATE log_analyze_stats SET stats_users = ".$users_update." WHERE stats_day_id = ".$day_id." AND stats_provider_id = ".$provider_id, $mysql_link);
-		if (mysql_affected_rows() != 1) {
+		if (mysql_affected_rows($mysql_link) != 1) {
 			catchMysqlError("LaAnalyzeStatsUpdateUser (UPDATE)", $mysql_link);
 			$status = 0;
 		}
@@ -506,7 +506,7 @@ function LaAnalyzeUserUpdate($day_id, $provider_id, $users, $mysql_link) {
 		if ($insert_values != "") {
 			# insert user list
 			$result = mysql_query("INSERT INTO ".$user_table." VALUES ".$insert_values, $mysql_link);
-			if (mysql_affected_rows() < 1) {
+			if (mysql_affected_rows($mysql_link) < 1) {
 				catchMysqlError("LaAnalyzeUserUpdate (INSERT)", $mysql_link);
 			}
 		}

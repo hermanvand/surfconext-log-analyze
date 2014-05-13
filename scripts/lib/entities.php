@@ -29,11 +29,11 @@ function fixIdPSPTables()
 			continue;
 		}
 
-		$result = mysql_query($q,$LA['mysql_link']);
+		$result = mysql_query($q,$LA['mysql_link_stats']);
 		# duplicate column (error 1060) is actually ok, as it implies the 
 		# column already exists
-		if (!$result && mysql_errno()!=1060) {
-			catchMysqlError("fixIdPSPTables ($q)", $LA['mysql_link']);
+		if (!$result && mysql_errno($LA['mysql_link_stats'])!=1060) {
+			catchMysqlError("fixIdPSPTables ($q)", $LA['mysql_link_stats']);
 		}
 	}
 }
@@ -52,7 +52,7 @@ function getAllEntities() {
 	$idp_index = array();
 	
 	# order by is crucial for building data structure
-	$result = mysql_query("SELECT eid,entityid,revisionid,state,type,created FROM ".$LA['table_entities']." ORDER BY eid,revisionid ASC", $LA['mysql_link']);
+	$result = mysql_query("SELECT eid,entityid,revisionid,state,type,created FROM ".$LA['table_entities']." ORDER BY eid,revisionid ASC", $LA['mysql_link_sr']);
 	
 	if ($result) {
 		while ($result_row = mysql_fetch_assoc($result)) {
@@ -142,7 +142,7 @@ function getAllEntities() {
 		}
 	}
 	else {
-		catchMysqlError("getAllEntities", $LA['mysql_link']);
+		catchMysqlError("getAllEntities", $LA['mysql_link_sr']);
 	}
 
 	return array($entities,$sp_index,$idp_index);

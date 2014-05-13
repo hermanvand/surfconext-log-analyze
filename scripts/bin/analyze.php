@@ -72,13 +72,13 @@ pcntl_signal(SIGCHLD, "sig_handler");
 ### PROCESSING ###
 ##################
 
-function processChunk($chunk,$db_link)
+function processChunk($chunk,$dbh_logins,$dbh_stats)
 {
 	global $LA;
 	$chunk_logins = 0;
 
 	echo "processing chunk: ".$chunk['id']."\n";
-	list($entries,$users) = getEntriesFromLogins($chunk['from'],$chunk['to'],$db_link);
+	list($entries,$users) = getEntriesFromLogins($chunk['from'],$chunk['to'],$dbh_logins,$dbh_stats);
 
 	# entry fields to process
 	# - $entries[$entry]['time']
@@ -103,21 +103,21 @@ function processChunk($chunk,$db_link)
 
 		# first, check the day 
 		# - note: two steps to make locking easier and faster
-		$day_status = LaAnalyzeDayInsert($entry['time'],$entry['sp_environment'],$db_link);
-		$day_id = LaAnalyzeDayUpdate($entry['time'],$entry['sp_environment'],$entry['count'],$db_link);
+		$day_status = LaAnalyzeDayInsert($entry['time'],$entry['sp_environment'],$dbh_stats);
+		$day_id = LaAnalyzeDayUpdate($entry['time'],$entry['sp_environment'],$entry['count'],$dbh_stats);
 
 		# second, check the SP and IDP
-		$provider_id = LaAnalyzeProviderUpdate($entry,$db_link);
+		$provider_id = LaAnalyzeProviderUpdate($entry,$dbh_stats);
 
 		# third, update the main table with login count
-		$stats_status = LaAnalyzeStatsUpdate($day_id,$provider_id,$entry['count'],$db_link);
+		$stats_status = LaAnalyzeStatsUpdate($day_id,$provider_id,$entry['count'],$dbh_stats);
 
 		# fourth, update users table & update main table with new user count
 		# - note, this might be the performance killer...
 		if (! $LA['disable_user_count']) {
-			$chunk_users = LaAnalyzeUserUpdate($day_id,$provider_id,$users[$key],$db_link);
+			$chunk_users = LaAnalyzeUserUpdate($day_id,$provider_id,$users[$key],$dbh_stats);
 			if ($chunk_users > 0) {
-				$stats_status = LaAnalyzeStatsUpdateUser($day_id,$provider_id,$chunk_users,$db_link);
+				$stats_status = LaAnalyzeStatsUpdateUser($day_id,$provider_id,$chunk_users,$dbh_stats);
 			}
 		}
 
@@ -136,16 +136,17 @@ function runChild()
 	##################
 
 	$time_start = microtime(true);
-	$child_link = openChildMysqlDb("DB");
+	$child_link_stats  = openMysqlDb("DB_stats");
+	$child_link_logins = openMysqlDb("DB_logins");
 
 	##################
 	### CHILD main ###
 	##################
 
-	$chunk = LaChunkNewGet($child_link);
+	$chunk = LaChunkNewGet($child_link_stats);
 	if (isset($chunk['id'])) {
-		$chunk_logins = processChunk($chunk,$child_link);
-		$done_status = LaChunkProcessUpdate($chunk['id'], $chunk_logins, $child_link);
+		$chunk_logins = processChunk($chunk,$child_link_logins,$child_link_stats);
+		$done_status = LaChunkProcessUpdate($chunk['id'], $chunk_logins, $child_link_stats);
 		agSaveChunkInfo($chunk_info_file,$chunk);
 	}
 	else {
@@ -156,7 +157,8 @@ function runChild()
 	### CHILD close ###
 	###################
 
-	closeChildMysqlDb($child_link);
+	closeMysqlDb($child_link_stats);
+	closeMysqlDb($child_link_logins);
 	$time_end = microtime(true);
 
 	# keep track of child times
@@ -175,12 +177,16 @@ function runChild()
 ### MAIN ###
 ############
 
-# get number of chunks from DB
-openMysqlDb("DB");
-$numberOfChunks = LaChunkNewCount();
+# get entity metadata from SR
+$LA['mysql_link_sr'] = openMysqlDb("DB_sr");
 list($entities,$entities_sp_index,$entities_idp_index) = getAllEntities();
+closeMysqlDb($LA['mysql_link_sr']);
+
+# get number of chunks from DB
+$LA['mysql_link_stats'] = openMysqlDb("DB_stats");
+$numberOfChunks = LaChunkNewCount();
 fixIdPSPTables();
-closeMysqlDb();
+closeMysqlDb($LA['mysql_link_stats']);
 
 # check for a max
 if ($numberOfChunks > $LA['max_allowed_process_chunk'] && $LA['max_allowed_process_chunk'] != 0) {
@@ -244,9 +250,9 @@ log2file("End processing ".$total_numberOfChunks." chunks in ".$total_time_play.
 log2file("Starting aggregation");
 $total_time_start = microtime(true);
 
-openMysqlDb("DB");
+$LA['mysql_link_stats'] = openMysqlDb("DB_stats");
 $num_days = agAggregate($chunk_info_file);
-closeMysqlDb();
+closeMysqlDb($LA['mysql_link_stats']);
 
 $total_time_end = microtime(true);
 $total_time_play = $total_time_end - $total_time_start;

@@ -80,7 +80,7 @@ function agParseDate($string)
 function agHandlePeriod($day_id,$env,$period_type,$period,$period_year)
 {
 	global $LA;
-	$con = $LA['mysql_link'];
+	$con = $LA['mysql_link_stats'];
 
 	print "Processing $period_type: $period_year-$period-$env ($day_id)... ";
 
@@ -100,7 +100,7 @@ function agHandlePeriod($day_id,$env,$period_type,$period,$period_year)
 		catchMysqlError("agHandlePeriod 1", $con);
 		return;
 	}
-	$period_id = mysql_insert_id();
+	$period_id = mysql_insert_id($con);
 	print "period $period_id\n";
 
 	# create the table log_analyze_period__NNNN to contain all unique users 
@@ -174,9 +174,9 @@ function agAggregate($file)
 		print "$d\n";;
 
 		#look up id and environment
-		$result = mysql_query("SELECT day_id,day_environment FROM log_analyze_day WHERE day_day='{$d}'",$LA['mysql_link']);
+		$result = mysql_query("SELECT day_id,day_environment FROM log_analyze_day WHERE day_day='{$d}'",$LA['mysql_link_stats']);
 		if (!$result) {
-			catchMysqlError("agAggregate: day {$date} not found", $LA['mysql_link']);
+			catchMysqlError("agAggregate: day {$date} not found", $LA['mysql_link_stats']);
 			return;
 		}
 

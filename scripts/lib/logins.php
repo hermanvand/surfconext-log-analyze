@@ -10,7 +10,7 @@ function getTotalNumberOfEntries($from, $to) {
 
 	$count = NULL;
 
-	$result = mysql_query("SELECT count(*) as number FROM ".$LA['table_logins']." WHERE loginstamp BETWEEN '".$from."' AND '".$to."'", $LA['mysql_link']);
+	$result = mysql_query("SELECT count(*) as number FROM ".$LA['table_logins']." WHERE loginstamp BETWEEN '".$from."' AND '".$to."'", $LA['mysql_link_logins']);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
@@ -27,7 +27,7 @@ function getRandomEntry($max, $from, $to) {
 	$offset = rand(1,$max-1);
 	$entry = array();
 
-	$result = mysql_query("SELECT loginstamp,userid,spentityid,idpentityid,spentityname,idpentityname FROM ".$LA['table_logins']." WHERE loginstamp BETWEEN '".$from."' AND '".$to."' LIMIT ".$offset.",1", $LA['mysql_link']);
+	$result = mysql_query("SELECT loginstamp,userid,spentityid,idpentityid,spentityname,idpentityname FROM ".$LA['table_logins']." WHERE loginstamp BETWEEN '".$from."' AND '".$to."' LIMIT ".$offset.",1", $LA['mysql_link_logins']);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
@@ -62,7 +62,7 @@ function getNumberOfEntriesPerProvider($sp, $idp, $from, $to, $counter) {
 		$selector = "count(DISTINCT(userid))";
 	}
 	
-	$result = mysql_query("SELECT ".$selector." as number FROM ".$LA['table_logins']. " WHERE spentityid = '".$sp."' AND idpentityid = '".$idp."'".$extend, $LA['mysql_link']);
+	$result = mysql_query("SELECT ".$selector." as number FROM ".$LA['table_logins']. " WHERE spentityid = '".$sp."' AND idpentityid = '".$idp."'".$extend, $LA['mysql_link_logins']);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
@@ -77,7 +77,7 @@ function getNumberOfEntriesFromLogins($from, $to) {
 
 	$count = NULL;
 
-	$result = mysql_query("SELECT count(*) as number FROM ".$LA['table_logins']. " WHERE loginstamp BETWEEN '".$from."' AND '".$to."'", $LA['mysql_link']);
+	$result = mysql_query("SELECT count(*) as number FROM ".$LA['table_logins']. " WHERE loginstamp BETWEEN '".$from."' AND '".$to."'", $LA['mysql_link_logins']);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
@@ -92,7 +92,7 @@ function getTimestampOfEntryFromLogins($from, $to, $offset) {
 
 	$timestamp = NULL;
 
-	$result = mysql_query("SELECT loginstamp FROM ".$LA['table_logins']. " WHERE loginstamp BETWEEN '".$from."' AND '".$to."' LIMIT ".$offset.",1", $LA['mysql_link']);
+	$result = mysql_query("SELECT loginstamp FROM ".$LA['table_logins']. " WHERE loginstamp BETWEEN '".$from."' AND '".$to."' LIMIT ".$offset.",1", $LA['mysql_link_logins']);
 	
 	if (mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
@@ -109,7 +109,7 @@ function getTimestampOfEntryFromLogins($from, $to, $offset) {
 # - use a $mysql_link parameter
 # - use locking
 
-function getEntriesFromLogins($from, $to, $mysql_link) {
+function getEntriesFromLogins($from, $to, $dbh_logins, $dbh_stats) {
     global $LA;
 
 	$count = 1;
@@ -117,7 +117,7 @@ function getEntriesFromLogins($from, $to, $mysql_link) {
 	$users = array();
 	$seen = array();
 	
-	$result = mysql_query("SELECT loginstamp,userid,spentityid,idpentityid,spentityname,idpentityname FROM ".$LA['table_logins']. " WHERE loginstamp BETWEEN '".$from."' AND '".$to."'", $mysql_link);
+	$result = mysql_query("SELECT loginstamp,userid,spentityid,idpentityid,spentityname,idpentityname FROM ".$LA['table_logins']. " WHERE loginstamp BETWEEN '".$from."' AND '".$to."'", $dbh_logins);
 	
 	if ($result) {
 		while ($result_row = mysql_fetch_assoc($result)) {
@@ -156,7 +156,7 @@ function getEntriesFromLogins($from, $to, $mysql_link) {
 				}
 			}
 			else {
-				$sp_revision = LaAnalyzeUnknownSPUpdate($result_row['spentityid'], $mysql_link);
+				$sp_revision = LaAnalyzeUnknownSPUpdate($result_row['spentityid'], $dbh_stats);
 				$sp_environment = "U";
 			}
 			
@@ -190,7 +190,7 @@ function getEntriesFromLogins($from, $to, $mysql_link) {
 				}
 			}
 			else {
-				$idp_revision = LaAnalyzeUnknownIDPUpdate($result_row['idpentityid'], $mysql_link);
+				$idp_revision = LaAnalyzeUnknownIDPUpdate($result_row['idpentityid'], $dbh_stats);
 				$idp_environment = "U";
 			}
 			
@@ -245,7 +245,7 @@ function getEntriesFromLogins($from, $to, $mysql_link) {
 		}
 	}
 	else {
-		catchMysqlError("getEntriesFromLogins", $mysql_link);
+		catchMysqlError("getEntriesFromLogins", $dbh_logins);
 	}
 
 	return array($entries, $users);

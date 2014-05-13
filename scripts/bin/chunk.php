@@ -161,7 +161,8 @@ else {
 #############
 
 # close database
-closeMysqlDb();
+closeMysqlDb($LA['mysql_link_logins']);
+closeMysqlDb($LA['mysql_link_stats']);
 
 # close log
 closeLogFile();
