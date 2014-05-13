@@ -82,7 +82,7 @@ function agHandlePeriod($day_id,$env,$period_type,$period,$period_year)
 	global $LA;
 	$con = $LA['mysql_link_stats'];
 
-	print "Processing $period_type: $period_year-$period-$env ($day_id)... ";
+	print "  - $period_type: $period_year-$period...";
 
 	mysql_query("START TRANSACTION", $con);
 
@@ -101,7 +101,6 @@ function agHandlePeriod($day_id,$env,$period_type,$period,$period_year)
 		return;
 	}
 	$period_id = mysql_insert_id($con);
-	print "period $period_id\n";
 
 	# create the table log_analyze_period__NNNN to contain all unique users 
 	# for this period
@@ -171,8 +170,6 @@ function agAggregate($file)
 
 	foreach ($process_dates as $d)
 	{
-		print "$d\n";;
-
 		#look up id and environment
 		$result = mysql_query("SELECT day_id,day_environment FROM log_analyze_day WHERE day_day='{$d}'",$LA['mysql_link_stats']);
 		if (!$result) {
@@ -183,9 +180,11 @@ function agAggregate($file)
 		# and do the actual aggregation for each date/environment
 		$date = agParseDate($d);
 		while ($row = mysql_fetch_assoc($result)) {
-			print_r($row);
 			$day_id = $row['day_id'];
 			$env    = $row['day_environment'];
+
+			print "Aggregating $d ($env):\n";
+
 			agHandlePeriod($day_id,$env,'w',$date['w'] ,$date['wy']);
 			agHandlePeriod($day_id,$env,'m',$date['m'] ,$date['y']);
 			agHandlePeriod($day_id,$env,'q',$date['q'] ,$date['y']);

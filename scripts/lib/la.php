@@ -179,7 +179,7 @@ function LaAnalyzeDayInsert($day, $environment, $mysql_link) {
 	$status = 1;
 	$timestamp = date("Y-m-d H:i:s");
 	$user_table = "";
-	
+
 	# starting a transaction
 	mysql_query("START TRANSACTION", $mysql_link);
 	# use semaphore to prevent duplicate inserts
