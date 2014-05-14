@@ -82,7 +82,8 @@ function agHandlePeriod($day_id,$env,$period_type,$period,$period_year)
 	global $LA;
 	$con = $LA['mysql_link_stats'];
 
-	print "  - $period_type: $period_year-$period...";
+	#print "  - $period_type: $period_year-$period...";
+	print $period_type;
 
 	mysql_query("START TRANSACTION", $con);
 
@@ -183,13 +184,15 @@ function agAggregate($file)
 			$day_id = $row['day_id'];
 			$env    = $row['day_environment'];
 
-			print "Aggregating $d ($env):\n";
+			print "Aggregating $d ($env): ";
 
 			agHandlePeriod($day_id,$env,'w',$date['w'] ,$date['wy']);
 			agHandlePeriod($day_id,$env,'m',$date['m'] ,$date['y']);
 			agHandlePeriod($day_id,$env,'q',$date['q'] ,$date['y']);
 			agHandlePeriod($day_id,$env,'y',$date['y'] ,$date['y']);
 			agHandlePeriod($day_id,$env,'a',$date['ay'],$date['y']);
+
+			print "\n";
 		}
 	}
 
