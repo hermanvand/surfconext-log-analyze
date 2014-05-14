@@ -41,7 +41,8 @@ if (! checkDateTime($entry_from) || ! checkDateTime($entry_to) ) {
 openLogFile($script_root);
 
 # open database
-openMysqlDb("DB");
+$LA['mysql_link_logins'] = openMysqlDb("DB_logins");
+$LA['mysql_link_stats']  = openMysqlDb("DB_stats");
 
 ############
 ### MAIN ###
