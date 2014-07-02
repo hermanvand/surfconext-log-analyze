@@ -84,12 +84,15 @@ INSERT INTO log_analyze_semaphore VALUES(3,"unknownIDP",1);
 INSERT INTO log_analyze_semaphore VALUES(4,"user",1);
 INSERT INTO log_analyze_semaphore VALUES(5,"day",1);
 
+/* aggregation tables */
 CREATE TABLE `log_analyze_period` (
-	`period_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-	`period_type` char(1) NOT NULL,
-	`period_period` int(2) unsigned NOT NULL,
-	`period_year` int(4) unsigned NOT NULL,
+	`period_id`          int(10) unsigned NOT NULL AUTO_INCREMENT,
+	`period_type`        char(1) NOT NULL,
+	`period_period`      int(2) unsigned NOT NULL,
+	`period_year`        int(4) unsigned NOT NULL,
 	`period_environment` char(2) NOT NULL,
+	`period_from`        timestamp NULL,
+	`period_to`          timestamp NULL,
 	PRIMARY KEY (`period_id`),
 	UNIQUE KEY (`period_period`,`period_year`,`period_environment`,`period_type`),
 	KEY (`period_period`,`period_year`),

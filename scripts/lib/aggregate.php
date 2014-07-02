@@ -89,13 +89,17 @@ function agHandlePeriod($day_id,$env,$period_type,$period,$period_year)
 
 	mysql_query("START TRANSACTION", $con);
 
+	list($period_start,$period_end) = agPeriodInfo($period_type,$period,$period_year);
+	$pbegin = $period_start->format('Y-m-d H:i:s');
+	$pend   = $period_end  ->format('Y-m-d H:i:s');
+
 	# create a new entry for the period in log_analyze_period
 	# note teh trick to make insert_id meaningful even if the row was only 
 	# updated (see http://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html )
 	$q = "
 		INSERT INTO `log_analyze_period` 
-		(`period_type`, `period_period`, `period_year`, `period_environment`) 
-		VALUES ('{$period_type}', {$period}, {$period_year}, '${env}')
+		(`period_type`, `period_period`, `period_year`, `period_environment`, `period_from`, `period_to`) 
+		VALUES ('{$period_type}', {$period}, {$period_year}, '${env}', '{$pbegin}', '{$pend}')
 		ON DUPLICATE KEY UPDATE period_id=LAST_INSERT_ID(period_id)
 	";
 	$result = mysql_query($q,$con);

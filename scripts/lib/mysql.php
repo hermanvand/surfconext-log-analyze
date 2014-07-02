@@ -8,6 +8,7 @@ function openMysqlDb($db) {
 
 	mysql_select_db($LA[$db]['mysql_db'], $mysql_link);
 	mysql_query("SET NAMES 'utf8';", $mysql_link);
+	mysql_query("SET time_zone = '{$LA['timezone']}';", $mysql_link);
 	mysql_query("SET storage_engine=InnoDB;", $mysql_link);
 
 	#log2file("Opened {$LA[$db]['mysql_user']}@{$LA[$db]['mysql_host']}/{$LA[$db]['mysql_db']}: ".print_r($mysql_link,1));
