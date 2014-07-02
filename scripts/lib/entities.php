@@ -17,11 +17,11 @@ function fixIdPSPTables()
 		# check type
 		if ( strncasecmp($metadata['type'], 'idp', 1) == 0 ) {
 			# IdP
-			$q = "ALTER TABLE `log_analyze_idp` ADD COLUMN `$key` TEXT DEFAULT NULL";
+			$q = "ALTER TABLE `log_analyze_idp` ADD COLUMN `idp_m_$key` TEXT DEFAULT NULL";
 		}
 		elseif ( strncasecmp($metadata['type'], 'sp', 1) == 0 ) {
 			# SP
-			$q = "ALTER TABLE `log_analyze_sp` ADD COLUMN `$key` TEXT DEFAULT NULL";
+			$q = "ALTER TABLE `log_analyze_sp` ADD COLUMN `sp_m_$key` TEXT DEFAULT NULL";
 		}
 		else
 		{
