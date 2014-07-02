@@ -53,7 +53,6 @@ function sig_handler ($signo) {
 					echo "WARNING: ".$pid." exited with status ".$signal."!\n";
 				}
 				if ( isset($currentProcesses[$pid]) ) {
-					echo "finished: ".$pid."\n";
 					unset($currentProcesses[$pid]);
 				}
 				else {
@@ -123,6 +122,7 @@ function processChunk($chunk,$dbh_logins,$dbh_stats)
 
 		$chunk_logins = $chunk_logins + $entry['count'];
 	}
+	echo "finished chunk: ".$chunk['id']."\n";
 	return $chunk_logins;
 }
 
@@ -172,21 +172,24 @@ function runChild()
 	exit(0);
 }
 
-
 ############
 ### MAIN ###
 ############
 
 # get entity metadata from SR
+echo "Fetching entity descriptions and metadata...";
 $LA['mysql_link_sr'] = openMysqlDb("DB_sr");
 list($entities,$entities_sp_index,$entities_idp_index) = getAllEntities();
 closeMysqlDb($LA['mysql_link_sr']);
+echo "\n";
 
 # get number of chunks from DB
+echo "Retrieving chunks to process...";
 $LA['mysql_link_stats'] = openMysqlDb("DB_stats");
 $numberOfChunks = LaChunkNewCount();
 fixIdPSPTables();
 closeMysqlDb($LA['mysql_link_stats']);
+echo "\n";
 
 # check for a max
 if ($numberOfChunks > $LA['max_allowed_process_chunk'] && $LA['max_allowed_process_chunk'] != 0) {
@@ -196,6 +199,7 @@ if ($numberOfChunks > $LA['max_allowed_process_chunk'] && $LA['max_allowed_proce
 # save for report
 $total_numberOfChunks = $numberOfChunks;
 
+echo "Start processing ".$total_numberOfChunks." chunks with ".$LA['max_processes']." parallel processes.\n";
 log2file("Start processing ".$total_numberOfChunks." chunks with ".$LA['max_processes']." parallel processes.");
 
 # loop while there are still chunks left
@@ -212,7 +216,6 @@ while ($numberOfChunks > 0) {
 	elseif ($pid) {
 		# parent
 		# - only register the new process and return to the main loop
-		echo "started: ".$pid."\n";
 		$currentProcesses[$pid] = 1;
 	}
 	else {
@@ -238,6 +241,7 @@ while(count($currentProcesses)){
 ### CLOSE ###
 #############
 
+echo "\n";
 $total_time_end = microtime(true);
 
 # keep track of times
@@ -248,6 +252,7 @@ log2file("End processing ".$total_numberOfChunks." chunks in ".$total_time_play.
 ### AGGREGRATE ###
 ##################
 log2file("Starting aggregation");
+echo "Starting aggregation\n";
 $total_time_start = microtime(true);
 
 $LA['mysql_link_stats'] = openMysqlDb("DB_stats");
