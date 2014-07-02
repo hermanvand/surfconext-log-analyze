@@ -328,7 +328,7 @@ function agAggregate($file)
 	foreach ($process_dates as $d)
 	{
 		#look up id and environment
-		$result = mysql_query("SELECT day_id,day_environment FROM log_analyze_day WHERE day_day='{$d}'",$LA['mysql_link_stats']);
+		$result = mysql_query("SELECT day_id,day_environment FROM log_analyze_day WHERE day_day='{$d}' ORDER BY day_day,day_environment",$LA['mysql_link_stats']);
 		if (!$result) {
 			catchMysqlError("agAggregate: day {$date} not found", $LA['mysql_link_stats']);
 			return;
