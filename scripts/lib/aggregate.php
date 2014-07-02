@@ -142,7 +142,7 @@ function agHandlePeriod($day_id,$env,$period_type,$period,$period_year)
 
 	mysql_query("COMMIT", $con);
 
-	print "\n";
+	return $period_id;
 }
 
 
@@ -178,6 +178,9 @@ function agAggregate($file)
 	sort($process_dates, SORT_STRING);
 
 
+	# array to keep track of which periods have changed 
+	$periods = array();
+	# iterate over days, and add each day's users to the period's users
 	foreach ($process_dates as $d)
 	{
 		#look up id and environment
@@ -187,22 +190,25 @@ function agAggregate($file)
 			return;
 		}
 
+		print "Aggregating $d: ";
+
 		# and do the actual aggregation for each date/environment
 		$date = agParseDate($d);
 		while ($row = mysql_fetch_assoc($result)) {
 			$day_id = $row['day_id'];
 			$env    = $row['day_environment'];
 
-			print "Aggregating $d ($env): ";
+			print "[$env]:";
 
-			agHandlePeriod($day_id,$env,'w',$date['w'] ,$date['wy']);
-			agHandlePeriod($day_id,$env,'m',$date['m'] ,$date['y']);
-			agHandlePeriod($day_id,$env,'q',$date['q'] ,$date['y']);
-			agHandlePeriod($day_id,$env,'y',$date['y'] ,$date['y']);
-			agHandlePeriod($day_id,$env,'a',$date['ay'],$date['y']);
+			$periods[] = agHandlePeriod($day_id,$env,'w',$date['w'],$date['wy']);
+			$periods[] = agHandlePeriod($day_id,$env,'m',$date['m'],$date['y']);
+			$periods[] = agHandlePeriod($day_id,$env,'q',$date['q'],$date['y']);
+			$periods[] = agHandlePeriod($day_id,$env,'y',$date['y'],$date['y']);
+			$periods[] = agHandlePeriod($day_id,$env,'a',$date['a'],$date['ay']);
 
-			print "\n";
+			print " ";
 		}
+		print "\n";
 	}
 
 	return count($process_dates);
