@@ -157,6 +157,25 @@ else {
 	echo "Could not fetch entries\n";
 }
 
+
+/*
+ *  TODO: check om te zien of chunks overlappen:
+ *
+ * SELECT 
+ *     a.chunk_id, a.chunk_from as a1, a.chunk_to as a2,
+ *     b.chunk_id, b.chunk_from as b1, b.chunk_to as b2
+ * FROM log_analyze_chunk as a, log_analyze_chunk as b
+ * WHERE (
+ *      a.chunk_from BETWEEN b.chunk_from AND b.chunk_to
+ *   OR a.chunk_to   BETWEEN b.chunk_from AND b.chunk_to
+ *   OR b.chunk_from BETWEEN a.chunk_from AND a.chunk_to
+ *   OR b.chunk_to   BETWEEN a.chunk_from AND a.chunk_to
+ * )
+ * AND a.chunk_id<b.chunk_id
+ *
+ */
+
+
 #############
 ### CLOSE ###
 #############
