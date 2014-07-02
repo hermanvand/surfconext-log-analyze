@@ -78,6 +78,50 @@ function agParseDate($string)
 	);
 }
 
+// Return start and end datetime of given period
+function agPeriodInfo($period_type,$period,$period_year)
+{
+	global $LA;
+
+	# initialize begin time
+	$pbegin = new DateTime();
+	$pbegin->setTimeZone(new DateTimeZone($LA['timezone']));
+	$pbegin->setTime(0,0,0);
+
+	// fill begin and end time
+	switch ($period_type)
+	{
+		case 'w':
+			$pbegin->setISODate($period_year,$period,1); // start on monday
+			$pend = clone $pbegin;
+			$pend->add(new DateInterval('P1W'));
+			break;
+		case 'm':
+			$pbegin->setDate($period_year,$period,1);
+			$pend = clone $pbegin;
+			$pend->add(new DateInterval('P1M'));
+			break;
+		case 'q':
+			$pbegin->setDate($period_year,3*$period-2,1);
+			$pend = clone $pbegin;
+			$pend->add(new DateInterval('P3M'));
+			break;
+		case 'y':
+			$pbegin->setDate($period_year,1,1);
+			$pend = clone $pbegin;
+			$pend->add(new DateInterval('P1Y'));
+			break;
+		case 'a':
+			$pbegin->setDate($period_year,9,1);
+			$pend = clone $pbegin;
+			$pend->add(new DateInterval('P1Y'));
+			break;
+	}
+	$pend->sub(new DateInterval('PT1S'));
+
+	return array($pbegin,$pend);
+}
+
 # handle the actual aggregation for a given day and period
 function agHandlePeriod($day_id,$env,$period_type,$period,$period_year)
 {
