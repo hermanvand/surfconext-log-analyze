@@ -1,3 +1,5 @@
+SET storage_engine=InnoDB;
+
 # CHUNK
 
 CREATE TABLE log_analyze_chunk (
@@ -13,7 +15,7 @@ CREATE TABLE log_analyze_chunk (
   INDEX from_index (chunk_from),
   INDEX to_index (chunk_to),
   INDEX status_index (chunk_status)
-) ENGINE=InnoDB;
+);
 
 # STATS
 
@@ -26,7 +28,7 @@ CREATE TABLE log_analyze_day (
 	day_updated DATETIME DEFAULT NULL,
 	PRIMARY KEY (day_id),
 	INDEX day_index (day_day)
-) ENGINE=InnoDB; 
+);
 
 CREATE TABLE log_analyze_sp (
 	sp_id INT NOT NULL AUTO_INCREMENT,
@@ -35,7 +37,7 @@ CREATE TABLE log_analyze_sp (
 	sp_revision INT DEFAULT NULL,
 	PRIMARY KEY (sp_id),
 	INDEX entity_index (sp_eid,sp_revision)
-) ENGINE=InnoDB; 
+);
 
 CREATE TABLE log_analyze_idp (
 	idp_id INT NOT NULL AUTO_INCREMENT,
@@ -44,7 +46,7 @@ CREATE TABLE log_analyze_idp (
 	idp_revision INT NOT NULL,
 	PRIMARY KEY (idp_id),
 	INDEX entity_index (idp_eid,idp_revision)
-) ENGINE=InnoDB; 
+);
 
 CREATE TABLE log_analyze_provider (
 	provider_id INT NOT NULL AUTO_INCREMENT,
@@ -53,7 +55,7 @@ CREATE TABLE log_analyze_provider (
 	PRIMARY KEY (provider_id),
 	FOREIGN KEY (provider_sp_id) REFERENCES log_analyze_sp (sp_id) ON DELETE CASCADE,
 	FOREIGN KEY (provider_idp_id) REFERENCES log_analyze_idp (idp_id) ON DELETE CASCADE
-) ENGINE=InnoDB; 
+);
 
 /* 
 * do not use an auto_increment id on the stats and users table
@@ -67,14 +69,14 @@ CREATE TABLE log_analyze_stats (
 	PRIMARY KEY (stats_day_id,stats_provider_id),
 	FOREIGN KEY (stats_day_id) REFERENCES log_analyze_day (day_id) ON DELETE CASCADE,
 	FOREIGN KEY (stats_provider_id) REFERENCES log_analyze_provider (provider_id) ON DELETE CASCADE
-) ENGINE=InnoDB; 
+);
 
 CREATE TABLE log_analyze_semaphore (
 	semaphore_id INT NOT NULL,
 	semaphore_name VARCHAR(128) NOT NULL,
 	semaphore_value INT NOT NULL,
 	PRIMARY KEY (semaphore_id)
-) ENGINE=InnoDB; 
+);
 
 INSERT INTO log_analyze_semaphore VALUES(1,"provider",1);
 INSERT INTO log_analyze_semaphore VALUES(2,"unknownSP",1);
