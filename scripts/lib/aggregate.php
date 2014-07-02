@@ -113,9 +113,12 @@ function agHandlePeriod($day_id,$env,$period_type,$period,$period_year)
 	# for this period
 	$q = "
 		CREATE TABLE IF NOT EXISTS `log_analyze_periods__{$period_id}` (
+			`period_id`   int(10) unsigned NOT NULL,
 			`provider_id` int(10) unsigned NOT NULL,
-			`name` char(40) NOT NULL,
-			UNIQUE KEY (`provider_id`,`name`)
+			`name`        char(40) NOT NULL,
+			UNIQUE KEY (`provider_id`,`name`),
+			FOREIGN KEY (period_id)   REFERENCES log_analyze_period   (period_id),
+			FOREIGN KEY (provider_id) REFERENCES log_analyze_provider (provider_id)
 		);
 	";
 	$result = mysql_query($q,$con);
@@ -127,8 +130,8 @@ function agHandlePeriod($day_id,$env,$period_type,$period,$period_year)
 	# insert all unique users into the new table
 	$q = "
 		INSERT IGNORE INTO `log_analyze_periods__{$period_id}` 
-		(`provider_id`,`name`)
-		SELECT `user_provider_id`,`user_name` 
+		(`period_id`,`provider_id`,`name`)
+		SELECT $period_id,`user_provider_id`,`user_name` 
 			FROM `log_analyze_days__{$day_id}`
 	";
 	$result = mysql_query($q,$con);
