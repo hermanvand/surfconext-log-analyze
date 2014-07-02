@@ -93,6 +93,8 @@ CREATE TABLE `log_analyze_period` (
 	`period_environment` char(2) NOT NULL,
 	`period_from`        timestamp NULL,
 	`period_to`          timestamp NULL,
+	`period_logins`      int(10) unsigned DEFAULT NULL,
+	`period_users`       int(10) unsigned DEFAULT NULL,
 	`period_created`     timestamp NULL DEFAULT NULL,
 	`period_updated`     timestamp DEFAULT NOW() ON UPDATE NOW(),
 	PRIMARY KEY (`period_id`),

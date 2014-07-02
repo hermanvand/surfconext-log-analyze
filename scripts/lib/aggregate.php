@@ -145,6 +145,66 @@ function agHandlePeriod($day_id,$env,$period_type,$period,$period_year)
 	return $period_id;
 }
 
+function agPeriodTotals($periods)
+{
+	global $LA;
+
+	$periods = array_unique( array_values($periods) );
+	sort($periods);
+
+	print "Calculating totals\n";
+
+	foreach ($periods as $period)
+	{
+		print "period: $period ";
+
+		# fetch days belonging to the currect period
+		$q = "
+			SELECT d.day_id,d.day_logins
+			FROM log_analyze_period as p
+			INNER JOIN log_analyze_day as d	
+				ON  d.day_environment=p.period_environment
+				AND d.day_day BETWEEN p.period_from AND p.period_to 
+			WHERE p.period_id=$period
+			ORDER BY day_day;
+		";
+		$result = mysql_query($q,$LA['mysql_link_stats']);
+		if (!$result || mysql_num_rows($result)==0) {
+			catchMysqlError("agPeriodTotals: no days found for period {$period}, query was: $q", $LA['mysql_link_stats']);
+			continue;
+		}
+
+		$selects = array();
+		$tot_logins = 0;
+		while ($row = mysql_fetch_assoc($result)) 
+		{
+			$selects[] = "SELECT DISTINCT user_name FROM log_analyze_days__{$row['day_id']}";
+			$tot_logins += $row['day_logins'];
+		}
+		$q = "SELECT COUNT(DISTINCT user_name) FROM ( " . implode(' UNION ', $selects) . ") foo";
+		$result = mysql_query($q,$LA['mysql_link_stats']);
+		if (!$result) {
+			catchMysqlError("agPeriodTotals: query failed: {$q}", $LA['mysql_link_stats']);
+			continue;
+		}
+		$row = mysql_fetch_array($result);
+		$tot_users = $row[0];
+
+		print " --> logins $tot_logins, users $tot_users\n";
+
+		$q = "
+			UPDATE log_analyze_period
+			SET period_logins={$tot_logins}, period_users={$tot_users}
+			WHERE period_id = {$period}
+		";
+		$result = mysql_query($q,$LA['mysql_link_stats']);
+		if (!$result || mysql_affected_rows($LA['mysql_link_stats'])==0) {
+			catchMysqlError("agPeriodTotals: error while updating period {$period}, query was: $q", $LA['mysql_link_stats']);
+			continue;
+		}
+	}
+}
+
 
 function agAggregate($file)
 {
@@ -210,6 +270,9 @@ function agAggregate($file)
 		}
 		print "\n";
 	}
+
+	# update the totals of all periods we've touched
+	agPeriodTotals($periods);
 
 	return count($process_dates);
 
