@@ -25,6 +25,7 @@ PREPARE stmt FROM @dropcmd;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
+DROP TABLE IF EXISTS log_analyze_periodstats;
 DROP TABLE IF EXISTS log_analyze_stats;
 DROP TABLE IF EXISTS log_analyze_provider;
 DROP TABLE IF EXISTS log_analyze_idp;

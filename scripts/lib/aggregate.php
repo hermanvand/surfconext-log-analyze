@@ -246,6 +246,46 @@ function agPeriodTotals($periods)
 			catchMysqlError("agPeriodTotals: error while updating period {$period}, query was: $q", $LA['mysql_link_stats']);
 			continue;
 		}
+
+		# save users per period/idp/sp, by counting users in log_analyze_periods__%
+		$q = "
+			INSERT INTO log_analyze_periodstats
+				(periodstats_period_id, periodstats_idp_id,periodstats_sp_id,periodstats_users)
+				SELECT s.period_id, p.provider_idp_id, p.provider_sp_id, @cnt := count(s.name) AS cnt
+					FROM log_analyze_periods__{$period} AS s
+					LEFT JOIN log_analyze_provider AS p on s.provider_id=p.provider_id
+				GROUP BY p.provider_id
+			ON DUPLICATE KEY UPDATE periodstats_users = @cnt;
+		";
+		$result = mysql_query($q,$LA['mysql_link_stats']);
+		if (!$result || mysql_affected_rows($LA['mysql_link_stats'])==0) {
+			catchMysqlError("agPeriodTotals: error while updating periodstats for period {$period}, query was: $q", $LA['mysql_link_stats']);
+			continue;
+		}
+		
+		# save logins per idp/sp, from log_analyze_stats
+		$q = "
+			INSERT INTO log_analyze_periodstats
+				(periodstats_period_id, periodstats_idp_id, periodstats_sp_id, periodstats_logins)
+				SELECT p.period_id, prov.provider_idp_id, prov.provider_sp_id, @cnt := SUM(s.stats_logins) AS cnt
+					FROM log_analyze_stats as s
+					LEFT JOIN log_analyze_provider AS prov
+						ON s.stats_provider_id = prov.provider_id
+					LEFT JOIN log_analyze_day AS d
+						ON s.stats_day_id = d.day_id
+					LEFT JOIN log_analyze_period AS p
+						ON d.day_day BETWEEN p.period_from AND p.period_to
+						AND d.day_environment = p.period_environment
+				WHERE p.period_id={$period}
+				GROUP BY prov.provider_id
+			ON DUPLICATE KEY UPDATE periodstats_logins = @cnt;
+		";
+		$result = mysql_query($q,$LA['mysql_link_stats']);
+		if (!$result || mysql_affected_rows($LA['mysql_link_stats'])==0) {
+			catchMysqlError("agPeriodTotals: error while updating periodstats for period {$period}, query was: $q", $LA['mysql_link_stats']);
+			continue;
+		}
+		
 	}
 }
 
