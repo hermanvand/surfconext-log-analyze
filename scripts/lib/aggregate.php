@@ -59,20 +59,22 @@ function agReadChunkInfo($file)
 
 function agParseDate($string)
 {
-	$date = new DateTIme($string);
+	$date = new DateTime($string);
 	$w  = $date->format('W')+0; # week
 	$wy = $date->format('o')+0; # week-based year
 	$m  = $date->format('n')+0; # month
 	$my = $date->format('Y')+0; # calender year
 	$q  = intval(($m-1)/3)+1;   # quarter
-	$ay = ( $m>=9 ? $my : $my-1 ); # academic year (starts on sep 1st)
+	$ay = ( $m>=9 ? $my : $my-1 ); # start year of academic year (starts on sep 1st)
+	$a  = ($ay%100)*100 + ($ay%100)+1; # name of academic year (1314 etc)
 	return array  (
 		'w'  => $w,
 		'wy' => $wy,
 		'm'  => $m,
 		'q'  => $q,
 		'y'  => $my,
-		'ay' => $ay
+		'ay' => $ay,
+		'a'  => $a
 	);
 }
 
