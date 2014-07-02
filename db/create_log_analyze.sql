@@ -93,12 +93,24 @@ CREATE TABLE `log_analyze_period` (
 	`period_environment` char(2) NOT NULL,
 	`period_from`        timestamp NULL,
 	`period_to`          timestamp NULL,
+	`period_created`     timestamp NULL DEFAULT NULL,
+	`period_updated`     timestamp DEFAULT NOW() ON UPDATE NOW(),
 	PRIMARY KEY (`period_id`),
 	UNIQUE KEY (`period_period`,`period_year`,`period_environment`,`period_type`),
 	KEY (`period_period`,`period_year`),
 	KEY (`period_type`),
 	KEY (`period_environment`)
 );
+/* trigger to automatically update period_created (necessary for MySQL<5.6) */
+DELIMITER ;;
+CREATE trigger log_analyze_period__trg_create
+BEFORE INSERT ON log_analyze_period
+FOR EACH ROW BEGIN
+	IF ISNULL(NEW.period_created)
+		THEN SET NEW.period_created = NOW();
+	END IF;
+END;;
+DELIMITER ;
 
 /* creating stored procedure to get unique user count over multiple days */
 
