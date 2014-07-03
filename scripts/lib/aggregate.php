@@ -158,7 +158,7 @@ function agHandlePeriod($day_id,$env,$period_type,$period,$period_year)
 	$q = "
 		CREATE TABLE IF NOT EXISTS `log_analyze_periods__{$period_id}` (
 			`period_id`   int(10) unsigned NOT NULL,
-			`provider_id` int(10) unsigned NOT NULL,
+			`provider_id` int(10) NOT NULL,
 			`name`        char(40) NOT NULL,
 			UNIQUE KEY (`provider_id`,`name`),
 			FOREIGN KEY (period_id)   REFERENCES log_analyze_period   (period_id),
