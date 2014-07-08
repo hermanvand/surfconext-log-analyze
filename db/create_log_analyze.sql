@@ -116,11 +116,11 @@ DELIMITER ;
 
 CREATE TABLE log_analyze_periodstats (
 	`periodstats_period_id` int(10) unsigned NOT NULL,
-	`periodstats_idp_id`    int(5) NOT NULL,
-	`periodstats_sp_id`     int(5) NOT NULL,
+	`periodstats_idp_id`    int(5) NULL DEFAULT NULL,
+	`periodstats_sp_id`     int(5) NULL DEFAULT NULL,
 	`periodstats_logins`    int(7) unsigned DEFAULT NULL,
 	`periodstats_users`     int(5) unsigned DEFAULT NULL,
-	PRIMARY KEY (`periodstats_period_id`,`periodstats_idp_id`,`periodstats_sp_id`),
+	UNIQUE  KEY (`periodstats_period_id`,`periodstats_idp_id`,`periodstats_sp_id`),
 	FOREIGN KEY (`periodstats_period_id`) REFERENCES `log_analyze_period` (`period_id`) ON DELETE CASCADE,
 	FOREIGN KEY (`periodstats_idp_id`)    REFERENCES `log_analyze_idp`    (`idp_id`)    ON DELETE CASCADE,
 	FOREIGN KEY (`periodstats_sp_id`)     REFERENCES `log_analyze_sp`     (`sp_id`)     ON DELETE CASCADE

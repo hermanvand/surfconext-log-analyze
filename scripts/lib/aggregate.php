@@ -242,12 +242,12 @@ function agPeriodTotals($periods)
 			WHERE period_id = {$period}
 		";
 		$result = mysql_query($q,$LA['mysql_link_stats']);
-		if (!$result || mysql_affected_rows($LA['mysql_link_stats'])==0) {
+		if (!$result) {
 			catchMysqlError("agPeriodTotals: error while updating period {$period}, query was: $q", $LA['mysql_link_stats']);
 			continue;
 		}
 
-		# save users per period/idp/sp, by counting users in log_analyze_periods__%
+		# save users per (period,idp,sp), by counting users in log_analyze_periods__%
 		$q = "
 			INSERT INTO log_analyze_periodstats
 				(periodstats_period_id, periodstats_idp_id,periodstats_sp_id,periodstats_users)
@@ -258,12 +258,12 @@ function agPeriodTotals($periods)
 			ON DUPLICATE KEY UPDATE periodstats_users = @cnt;
 		";
 		$result = mysql_query($q,$LA['mysql_link_stats']);
-		if (!$result || mysql_affected_rows($LA['mysql_link_stats'])==0) {
+		if (!$result) {
 			catchMysqlError("agPeriodTotals: error while updating periodstats for period {$period}, query was: $q", $LA['mysql_link_stats']);
 			continue;
 		}
 		
-		# save logins per idp/sp, from log_analyze_stats
+		# save logins per (idp,sp), from log_analyze_stats
 		$q = "
 			INSERT INTO log_analyze_periodstats
 				(periodstats_period_id, periodstats_idp_id, periodstats_sp_id, periodstats_logins)
@@ -281,11 +281,90 @@ function agPeriodTotals($periods)
 			ON DUPLICATE KEY UPDATE periodstats_logins = @cnt;
 		";
 		$result = mysql_query($q,$LA['mysql_link_stats']);
-		if (!$result || mysql_affected_rows($LA['mysql_link_stats'])==0) {
+		if (!$result) {
 			catchMysqlError("agPeriodTotals: error while updating periodstats for period {$period}, query was: $q", $LA['mysql_link_stats']);
 			continue;
 		}
-		
+
+		# save totals per idp and per sp
+		# manually delete the rows we're going to insert below
+		# as MySQL doesn't support partial indices
+		$q = "
+			DELETE FROM log_analyze_periodstats
+				WHERE periodstats_period_id={$period}
+				AND (periodstats_sp_id IS NULL OR periodstats_idp_id IS NULL);
+		";
+		$result = mysql_query($q,$LA['mysql_link_stats']);
+		if (!$result) {
+			catchMysqlError("agPeriodTotals: error while calculating periodstats for period {$period}, query was: $q", $LA['mysql_link_stats']);
+			continue;
+		}
+
+		# total logins per period per sp
+		# fetched by summing over all idps for this (period,sp) in log_analyze_periodstats
+		$q = "
+			INSERT INTO log_analyze_periodstats
+				  (periodstats_period_id, periodstats_idp_id, periodstats_sp_id, periodstats_logins)
+			SELECT periodstats_period_id, NULL,               periodstats_sp_id, SUM(periodstats_logins)
+				FROM log_analyze_periodstats
+				WHERE periodstats_period_id={$period} AND periodstats_sp_id IS NOT NULL
+				GROUP BY periodstats_sp_id;
+		";
+		$result = mysql_query($q,$LA['mysql_link_stats']);
+		if (!$result) {
+			catchMysqlError("agPeriodTotals: error while calculating periodstats for period {$period}, query was: $q", $LA['mysql_link_stats']);
+			continue;
+		}
+
+		# total logins per period per idp
+		# fetched by summing over all sps for this (period,idp) in log_analyze_periodstats
+		$q = "
+			INSERT INTO log_analyze_periodstats
+				  (periodstats_period_id, periodstats_idp_id, periodstats_sp_id, periodstats_logins)
+			SELECT periodstats_period_id, periodstats_idp_id, NULL,              SUM(periodstats_logins)
+				FROM log_analyze_periodstats
+				WHERE periodstats_period_id={$period} AND periodstats_idp_id IS NOT NULL
+				GROUP BY periodstats_idp_id;
+		";
+		$result = mysql_query($q,$LA['mysql_link_stats']);
+		if (!$result) {
+			catchMysqlError("agPeriodTotals: error while calculating periodstats for period {$period}, query was: $q", $LA['mysql_link_stats']);
+			continue;
+		}
+
+		# total users per period per sp
+		# fetched by counting unqiue users in log_analyze_periods__% for a fixed (period,sp)
+		$q = "
+			UPDATE log_analyze_periodstats as ps
+			SET ps.periodstats_users=(
+				SELECT COUNT(DISTINCT s.name) AS cnt
+					FROM log_analyze_periods__{$period} AS s
+					LEFT JOIN log_analyze_provider AS p ON s.provider_id=p.provider_id
+				WHERE p.provider_sp_id=ps.periodstats_sp_id)
+			WHERE ps.periodstats_period_id={$period} AND ps.periodstats_idp_id IS NULL;
+		";
+		$result = mysql_query($q,$LA['mysql_link_stats']);
+		if (!$result) {
+			catchMysqlError("agPeriodTotals: error while calculating periodstats for period {$period}, query was: $q", $LA['mysql_link_stats']);
+			continue;
+		}
+
+		# total users per period per idp
+		# fetched by counting unqiue users in log_analyze_periods__% for a fixed (period,idp)
+		$q = "
+			UPDATE log_analyze_periodstats as ps
+			SET ps.periodstats_users=(
+				SELECT COUNT(DISTINCT s.name) AS cnt
+					FROM log_analyze_periods__{$period} AS s
+					LEFT JOIN log_analyze_provider AS p ON s.provider_id=p.provider_id
+				WHERE p.provider_idp_id=ps.periodstats_idp_id)
+			WHERE ps.periodstats_period_id={$period} AND ps.periodstats_sp_id IS NULL;
+		";
+		$result = mysql_query($q,$LA['mysql_link_stats']);
+		if (!$result) {
+			catchMysqlError("agPeriodTotals: error while calculating periodstats for period {$period}, query was: $q", $LA['mysql_link_stats']);
+			continue;
+		}
 	}
 }
 
