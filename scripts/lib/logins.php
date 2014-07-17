@@ -140,6 +140,7 @@ function getEntriesFromLogins($from, $to, $dbh_logins, $dbh_stats) {
 					if ($first) {
 						$sp_revision = $revision;
 						$sp_environment = $value['environment'];
+						$sp_entityid = $value['entityid'];
 						$sp_metadata = $value['metadata'];
 						$first = 0;
 					}
@@ -150,6 +151,7 @@ function getEntriesFromLogins($from, $to, $dbh_logins, $dbh_stats) {
 						else {
 							$sp_revision = $revision;
 							$sp_environment = $value['environment'];
+							$sp_entityid = $value['entityid'];
 							$sp_metadata = $value['metadata'];
 						}
 					}
@@ -157,6 +159,7 @@ function getEntriesFromLogins($from, $to, $dbh_logins, $dbh_stats) {
 			}
 			else {
 				$sp_revision = LaAnalyzeUnknownSPUpdate($result_row['spentityid'], $dbh_stats);
+				$sp_entityid = $result_row['spentityid'];
 				$sp_environment = "U";
 			}
 			
@@ -174,6 +177,7 @@ function getEntriesFromLogins($from, $to, $dbh_logins, $dbh_stats) {
 					if ($first) {
 						$idp_revision = $revision;
 						$idp_environment = $value['environment'];
+						$idp_entityid = $value['entityid'];
 						$idp_metadata = $value['metadata'];
 						$first = 0;
 					}
@@ -184,6 +188,7 @@ function getEntriesFromLogins($from, $to, $dbh_logins, $dbh_stats) {
 						else {
 							$idp_revision = $revision;
 							$idp_environment = $value['environment'];
+							$idp_entityid = $value['entityid'];
 							$idp_metadata = $value['metadata'];
 						}
 					}
@@ -191,6 +196,7 @@ function getEntriesFromLogins($from, $to, $dbh_logins, $dbh_stats) {
 			}
 			else {
 				$idp_revision = LaAnalyzeUnknownIDPUpdate($result_row['idpentityid'], $dbh_stats);
+				$idp_entityid = $result_row['idpentityid'];
 				$idp_environment = "U";
 			}
 			
@@ -223,6 +229,8 @@ function getEntriesFromLogins($from, $to, $dbh_logins, $dbh_stats) {
 				$entries[$entry]['idp'] = $result_row['idpentityid'];
 				$entries[$entry]['sp_name'] = $result_row['spentityname'];
 				$entries[$entry]['idp_name'] = $result_row['idpentityname'];
+				$entries[$entry]['sp_entityid'] = $sp_entityid;
+				$entries[$entry]['idp_entityid'] = $idp_entityid;
 				$entries[$entry]['sp_eid'] = $sp_eid;
 				$entries[$entry]['idp_eid'] = $idp_eid;
 				$entries[$entry]['sp_revision'] = $sp_revision;

@@ -286,7 +286,7 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 		}
 		else {
 			# insert SP
-			$query = "INSERT INTO log_analyze_sp (sp_name,sp_eid,sp_revision) VALUES('".safeInsert($entry['sp_name'])."',".$entry['sp_eid'].",".$entry['sp_revision'].")";
+			$query = "INSERT INTO log_analyze_sp (sp_name,sp_entityid,sp_eid,sp_revision) VALUES('".safeInsert($entry['sp_name'])."','".safeInsert($entry['sp_entityid'])."',".$entry['sp_eid'].",".$entry['sp_revision'].")";
 			$result = mysql_query($query, $mysql_link);
 			$sp_id = mysql_insert_id($mysql_link);
 			if (mysql_affected_rows($mysql_link) != 1) {
@@ -312,7 +312,7 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 		}
 		else {
 			# insert IDP
-			$query = "INSERT INTO log_analyze_idp (idp_name,idp_eid,idp_revision) VALUES('".safeInsert($entry['idp_name'])."',".$entry['idp_eid'].",".$entry['idp_revision'].")";
+			$query = "INSERT INTO log_analyze_idp (idp_name,idp_entityid,idp_eid,idp_revision) VALUES('".safeInsert($entry['idp_name'])."','".safeInsert($entry['idp_entityid'])."',".$entry['idp_eid'].",".$entry['idp_revision'].")";
 			$result = mysql_query($query, $mysql_link);
 			$idp_id = mysql_insert_id($mysql_link);
 			if (mysql_affected_rows($mysql_link) != 1) {
@@ -370,7 +370,7 @@ function LaAnalyzeUnknownSPUpdate($sp_name, $mysql_link) {
 			$sp_revision = $result_row['max_sp_revision'] + 1;
 		}
 		# insert SP
-		$result = mysql_query("INSERT INTO log_analyze_sp (sp_name,sp_eid,sp_revision) VALUES('".$sp_name."',0,".$sp_revision.")", $mysql_link);
+		$result = mysql_query("INSERT INTO log_analyze_sp (sp_name,sp_entityid,sp_eid,sp_revision) VALUES('".$sp_name."','".$sp_name."',0,".$sp_revision.")", $mysql_link);
 		$sp_id = mysql_insert_id($mysql_link);
 		if (mysql_affected_rows($mysql_link) != 1) {
 			catchMysqlError("LaAnalyzeUnknownSPUpdate", $mysql_link);
@@ -410,7 +410,7 @@ function LaAnalyzeUnknownIDPUpdate($idp_name, $mysql_link) {
 			$idp_revision = $result_row['max_idp_revision'] + 1;
 		}
 		# insert IDP
-		$result = mysql_query("INSERT INTO log_analyze_idp (idp_name,idp_eid,idp_revision) VALUES('".$idp_name."',0,".$idp_revision.")", $mysql_link);
+		$result = mysql_query("INSERT INTO log_analyze_idp (idp_name,idp_eid,idp_revision) VALUES('$idp_name','$idp_name',0,$idp_revision)", $mysql_link);
 		$idp_id = mysql_insert_id($mysql_link);
 		if (mysql_affected_rows($mysql_link) != 1) {
 			catchMysqlError("LaAnalyzeUnknownIDPUpdate", $mysql_link);

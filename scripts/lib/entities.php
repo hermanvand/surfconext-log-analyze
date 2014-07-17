@@ -67,6 +67,7 @@ function getAllEntities() {
 			$conrev_id = $result_row['id'];
 			$eid = $result_row['eid'];
 			$name = $result_row['entityid'];
+			$entityid = $result_row['entityid'];
 			$revision = $result_row['revisionid'];
 
 			$dt = new DateTime($result_row['created']);
@@ -121,6 +122,7 @@ function getAllEntities() {
 			if ( $environment != $prev_env || !array_equal($extra,$prev_extra) ) {
 				$entities[$eid][$revision] = array();
 				$entities[$eid][$revision]['timestamp'] = $timestamp;
+				$entities[$eid][$revision]['entityid'] = $entityid;
 				$entities[$eid][$revision]['environment'] = $environment;
 				$entities[$eid][$revision]['metadata'] = $extra;
 

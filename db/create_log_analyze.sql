@@ -33,6 +33,7 @@ CREATE TABLE log_analyze_day (
 CREATE TABLE log_analyze_sp (
 	sp_id INT NOT NULL AUTO_INCREMENT,
 	sp_name VARCHAR(4096) DEFAULT NULL,
+	sp_entityid VARCHAR(4096) DEFAULT NULL,
 	sp_eid INT DEFAULT NULL,
 	sp_revision INT DEFAULT NULL,
 	PRIMARY KEY (sp_id),
@@ -42,6 +43,7 @@ CREATE TABLE log_analyze_sp (
 CREATE TABLE log_analyze_idp (
 	idp_id INT NOT NULL AUTO_INCREMENT,
 	idp_name VARCHAR(4096) DEFAULT NULL,
+	idp_entityid VARCHAR(4096) DEFAULT NULL,
 	idp_eid INT NOT NULL,
 	idp_revision INT NOT NULL,
 	PRIMARY KEY (idp_id),
