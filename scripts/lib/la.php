@@ -410,7 +410,7 @@ function LaAnalyzeUnknownIDPUpdate($idp_name, $mysql_link) {
 			$idp_revision = $result_row['max_idp_revision'] + 1;
 		}
 		# insert IDP
-		$result = mysql_query("INSERT INTO log_analyze_idp (idp_name,idp_eid,idp_revision) VALUES('$idp_name','$idp_name',0,$idp_revision)", $mysql_link);
+		$result = mysql_query("INSERT INTO log_analyze_idp (idp_name,idp_entityid,idp_eid,idp_revision) VALUES('$idp_name','$idp_name',0,$idp_revision)", $mysql_link);
 		$idp_id = mysql_insert_id($mysql_link);
 		if (mysql_affected_rows($mysql_link) != 1) {
 			catchMysqlError("LaAnalyzeUnknownIDPUpdate", $mysql_link);
