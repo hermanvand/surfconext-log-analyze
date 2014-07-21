@@ -93,6 +93,7 @@ function getAllEntities() {
 				$prev_env = "";
 				$prev_name = "";
 				$prev_extra = "";
+				$prev_provider = "";
 			}
 				
 			# fetch requested metadata fields
@@ -119,30 +120,28 @@ function getAllEntities() {
 			}
 
 			# Be smart, only consider revision with changes in environment :-)
-			if ( $environment != $prev_env || !array_equal($extra,$prev_extra) ) {
+			if ( $provider != $prev_provider || $environment != $prev_env || !array_equal($extra,$prev_extra) ) {
 				$entities[$eid][$revision] = array();
 				$entities[$eid][$revision]['timestamp'] = $timestamp;
 				$entities[$eid][$revision]['entityid'] = $entityid;
 				$entities[$eid][$revision]['environment'] = $environment;
 				$entities[$eid][$revision]['metadata'] = $extra;
 
-				$prev_extra = $extra;
-				$prev_env   = $environment;
+				$prev_extra    = $extra;
+				$prev_env      = $environment;
 			}
 
 			# Be fast, build indexes from name to eid, for both sp & idp :-)
-			if ($name != $prev_name) {		
-				if ( $name != $prev_name ) {
-					if ($provider == "S") {
-						$sp_index[$name] = $eid;
-					}
-					else {
-						$idp_index[$name] = $eid;
-					}
+			if ( $name != $prev_name || $provider != $prev_provider ) {
+				if ($provider == "S") {
+					$sp_index[$name] = $eid;
 				}
-				$prev_name = $name;
+				else {
+					$idp_index[$name] = $eid;
+				}
+				$prev_name     = $name;
+				$prev_provider = $provider;
 			}
-			
 		}
 	}
 	else {
