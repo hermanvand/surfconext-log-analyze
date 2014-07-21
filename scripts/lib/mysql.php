@@ -6,6 +6,8 @@ function openMysqlDb($db) {
 
 	$mysql_link = mysql_connect($LA[$db]['mysql_host'], $LA[$db]['mysql_user'], $LA[$db]['mysql_pass'],true);
 
+	if ($mysql_link===false) exit(1);
+
 	mysql_select_db($LA[$db]['mysql_db'], $mysql_link);
 	mysql_query("SET NAMES 'utf8';", $mysql_link);
 	mysql_query("SET time_zone = '{$LA['timezone']}';", $mysql_link);
