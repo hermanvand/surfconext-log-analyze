@@ -60,6 +60,10 @@ if (isset($count)) {
 		$chunk_count = $LA['max_chunk_count'] * $LA['max_processes'];
 		$chunk_size = ceil($count/$chunk_count);
 	}
+	if ($chunk_count<1) {
+		print "Incorrect interval\n";
+		exit(1);
+	}
 	
 	# calculate chunk size in seconds
 	$entry_from_seconds = strtotime($entry_from);
