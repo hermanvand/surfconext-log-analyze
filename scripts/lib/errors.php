@@ -61,7 +61,12 @@ function log2file($message) {
     global $LA;
 
     $out = strftime("%A %d-%b-%y %T %Z", time()).": ".$message."\n";
-    fwrite($LA['log_handler'], $out, strlen($out));
+
+    if ( array_key_exists('log_handler',$LA) && $LA['log_handler'] ) {
+        fwrite($LA['log_handler'], $out, strlen($out));
+    } else {
+        print "$out";
+    }
 
 }
 
