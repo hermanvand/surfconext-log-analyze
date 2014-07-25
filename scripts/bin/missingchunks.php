@@ -251,9 +251,10 @@ closeMysqlDb($dbh);
 $options = getopt("c");
 
 # print output
-$done = $timeline->findStatus('D');
-$new  = $timeline->findStatus('I');
-$todo = $timeline->findStatus('U');
+$done    = $timeline->findStatus('D');
+$doing   = $timeline->findStatus('I');
+$chunked = $timeline->findStatus('C');
+$todo    = $timeline->findStatus('U');
 
 # print in form ready to feed to chunk.php
 if (isset($options['c']))
@@ -276,13 +277,20 @@ foreach ($done as $s)
 	print " - $t0 - $t1\n";
 }
 print "In progress: \n";
-foreach ($new as $s)
+foreach ($doing as $s)
 {
 	$t0 = format_date($s[0]);
 	$t1 = format_date($s[1]);
 	print " - $t0 - $t1\n";
 }
 print "To process: \n";
+foreach ($chunked as $s)
+{
+	$t0 = format_date($s[0]);
+	$t1 = format_date($s[1]);
+	print " - $t0 - $t1\n";
+}
+print "Unallocated: \n";
 foreach ($todo as $s)
 {
 	$t0 = format_date($s[0]);
