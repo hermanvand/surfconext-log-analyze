@@ -3,19 +3,29 @@ SET storage_engine=InnoDB;
 # CHUNK
 
 CREATE TABLE log_analyze_chunk (
-  chunk_id INT NOT NULL AUTO_INCREMENT,
-  chunk_from DATETIME DEFAULT NULL,
-  chunk_to DATETIME DEFAULT NULL,
-  chunk_status VARCHAR(128) NOT NULL DEFAULT 'new',
-  chunk_created DATETIME DEFAULT NULL,
-  chunk_updated DATETIME DEFAULT NULL,
-  chunk_in INT DEFAULT NULL,
-  chunk_out INT DEFAULT NULL,
-  PRIMARY KEY (chunk_id),
-  INDEX from_index (chunk_from),
-  INDEX to_index (chunk_to),
-  INDEX status_index (chunk_status)
+	chunk_id INT NOT NULL AUTO_INCREMENT,
+	chunk_from TIMESTAMP NULL DEFAULT NULL,
+	chunk_to TIMESTAMP NULL DEFAULT NULL,
+	chunk_status VARCHAR(128) NOT NULL DEFAULT 'new',
+	chunk_created TIMESTAMP NULL DEFAULT NULL,
+	chunk_updated TIMESTAMP DEFAULT NOW() ON UPDATE NOW(),
+	chunk_in INT DEFAULT NULL,
+	chunk_out INT DEFAULT NULL,
+	PRIMARY KEY (chunk_id),
+	INDEX from_index (chunk_from),
+	INDEX to_index (chunk_to),
+	INDEX status_index (chunk_status)
 );
+/* trigger to automatically update chunk_created (necessary for MySQL<5.6) */
+DELIMITER ;;
+CREATE trigger log_analyze_chunk__trg_create
+BEFORE INSERT ON log_analyze_chunk
+FOR EACH ROW BEGIN
+	IF ISNULL(NEW.chunk_created)
+		THEN SET NEW.chunk_created = NOW();
+	END IF;
+END;;
+DELIMITER ;
 
 # STATS
 
@@ -24,11 +34,21 @@ CREATE TABLE log_analyze_day (
 	day_day DATE DEFAULT NULL,
 	day_environment VARCHAR(8) DEFAULT NULL,
 	day_logins INT DEFAULT NULL,
-	day_created DATETIME DEFAULT NULL,
-	day_updated DATETIME DEFAULT NULL,
+	day_created TIMESTAMP NULL DEFAULT NULL,
+	day_updated TIMESTAMP DEFAULT NOW() ON UPDATE NOW(),
 	PRIMARY KEY (day_id),
 	INDEX day_index (day_day)
 );
+/* trigger to automatically update day_created (necessary for MySQL<5.6) */
+DELIMITER ;;
+CREATE trigger log_analyze_day__trg_create
+BEFORE INSERT ON log_analyze_day
+FOR EACH ROW BEGIN
+	IF ISNULL(NEW.day_created)
+		THEN SET NEW.day_created = NOW();
+	END IF;
+END;;
+DELIMITER ;
 
 CREATE TABLE log_analyze_sp (
 	sp_id INT NOT NULL AUTO_INCREMENT,
@@ -36,8 +56,10 @@ CREATE TABLE log_analyze_sp (
 	sp_entityid VARCHAR(4096) DEFAULT NULL,
 	sp_eid INT DEFAULT NULL,
 	sp_revision INT DEFAULT NULL,
+	sp_environment VARCHAR(32) DEFAULT NULL,
 	PRIMARY KEY (sp_id),
-	INDEX entity_index (sp_eid,sp_revision)
+	INDEX entity_index (sp_eid,sp_revision),
+	INDEX (sp_environment)
 );
 
 CREATE TABLE log_analyze_idp (
@@ -46,8 +68,10 @@ CREATE TABLE log_analyze_idp (
 	idp_entityid VARCHAR(4096) DEFAULT NULL,
 	idp_eid INT NOT NULL,
 	idp_revision INT NOT NULL,
+	idp_environment VARCHAR(32) DEFAULT NULL,
 	PRIMARY KEY (idp_id),
 	INDEX entity_index (idp_eid,idp_revision)
+	INDEX (idp_environment)
 );
 
 CREATE TABLE log_analyze_provider (
@@ -122,11 +146,23 @@ CREATE TABLE log_analyze_periodstats (
 	`periodstats_sp_id`     int(5) NULL DEFAULT NULL,
 	`periodstats_logins`    int(7) unsigned DEFAULT NULL,
 	`periodstats_users`     int(5) unsigned DEFAULT NULL,
+	`periodstats_created`   timestamp NULL DEFAULT NULL,
+	`periodstats_updated`   timestamp DEFAULT NOW() ON UPDATE NOW(),
 	UNIQUE  KEY (`periodstats_period_id`,`periodstats_idp_id`,`periodstats_sp_id`),
 	FOREIGN KEY (`periodstats_period_id`) REFERENCES `log_analyze_period` (`period_id`) ON DELETE CASCADE,
 	FOREIGN KEY (`periodstats_idp_id`)    REFERENCES `log_analyze_idp`    (`idp_id`)    ON DELETE CASCADE,
 	FOREIGN KEY (`periodstats_sp_id`)     REFERENCES `log_analyze_sp`     (`sp_id`)     ON DELETE CASCADE
 );
+/* trigger to automatically update periodstats_created (necessary for MySQL<5.6) */
+DELIMITER ;;
+CREATE trigger log_analyze_periodstats__trg_create
+BEFORE INSERT ON log_analyze_periodstats
+FOR EACH ROW BEGIN
+	IF ISNULL(NEW.periodstats_created)
+		THEN SET NEW.periodstats_created = NOW();
+	END IF;
+END;;
+DELIMITER ;
 
 
 /* creating stored procedure to get unique user count over multiple days */

@@ -11,7 +11,11 @@ function LaChunkSave($chunkArray) {
 	$timestamp = date("Y-m-d H:i:s");
 
 	foreach ($chunkArray as $chunk) {
-		$result = mysql_query("INSERT INTO log_analyze_chunk VALUES(NULL,'".$chunk['from']."','".$chunk['to']."','new','".$timestamp."',NULL,".$chunk['size'].",NULL)", $LA['mysql_link_stats']);
+		$result = mysql_query("
+			INSERT INTO log_analyze_chunk 
+			(`chunk_from`,`chunk_to`,`chunk_status`,`chunk_in`)
+			VALUES('{$chunk['from']}','{$chunk['to']}','new',{$chunk['size']})
+		", $LA['mysql_link_stats']);
 		
 		if (mysql_affected_rows($LA['mysql_link_stats']) != 1) {
 			$status = 0;
@@ -190,7 +194,7 @@ function LaAnalyzeDayInsert($day, $environment, $mysql_link) {
 
 	if (mysql_num_rows($result) != 1) {
 		# insert day
-		$result = mysql_query("INSERT INTO log_analyze_day (`day_day`,`day_environment`,`day_created`,`day_updated`) VALUES('".$day."','".$environment."','".$timestamp."','".$timestamp."')", $mysql_link);
+		$result = mysql_query("INSERT INTO log_analyze_day (`day_day`,`day_environment`) VALUES('".$day."','".$environment."')", $mysql_link);
 		$day_id = mysql_insert_id($mysql_link);
 		if (mysql_affected_rows($mysql_link) != 1) {
 			catchMysqlError("LaAnalyzeDayInsert ($result): ".mysql_error($mysql_link), $mysql_link);
@@ -286,7 +290,17 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 		}
 		else {
 			# insert SP
-			$query = "INSERT INTO log_analyze_sp (sp_name,sp_entityid,sp_eid,sp_revision) VALUES('".safeInsert($entry['sp_name'])."','".safeInsert($entry['sp_entityid'])."',".$entry['sp_eid'].",".$entry['sp_revision'].")";
+			$query = "
+				INSERT INTO log_analyze_sp 
+				(sp_name,sp_entityid,sp_eid,sp_revision,sp_environment)
+				VALUES(
+					'".safeInsert($entry['sp_name'])."',
+					'".safeInsert($entry['sp_entityid'])."',
+					{$entry['sp_eid']},
+					{$entry['sp_revision']},
+					'".safeInsert($entry['sp_environment'])."'
+				)
+			";
 			$result = mysql_query($query, $mysql_link);
 			$sp_id = mysql_insert_id($mysql_link);
 			if (mysql_affected_rows($mysql_link) != 1) {
@@ -312,7 +326,17 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 		}
 		else {
 			# insert IDP
-			$query = "INSERT INTO log_analyze_idp (idp_name,idp_entityid,idp_eid,idp_revision) VALUES('".safeInsert($entry['idp_name'])."','".safeInsert($entry['idp_entityid'])."',".$entry['idp_eid'].",".$entry['idp_revision'].")";
+			$query = "
+				INSERT INTO log_analyze_idp 
+				(idp_name,idp_entityid,idp_eid,idp_revision,idp_environment) 
+				VALUES(
+					'".safeInsert($entry['idp_name'])."',
+					'".safeInsert($entry['idp_entityid'])."',
+					{$entry['idp_eid']},
+					{$entry['idp_revision']},
+					'".safeInsert($entry['idp_environment'])."'
+				)
+			";
 			$result = mysql_query($query, $mysql_link);
 			$idp_id = mysql_insert_id($mysql_link);
 			if (mysql_affected_rows($mysql_link) != 1) {
