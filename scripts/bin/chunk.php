@@ -1,15 +1,26 @@
 #!/usr/bin/php
 <?php
 
+function timestamp2datestr($timestamp)
+{
+	global $LA;
+
+	# convert timestamp to same timezone as used in MySQL connections
+	$dt = DateTime::createFromFormat('U',$timestamp);
+	$dt->setTimezone(new DateTimeZone($LA['timezone']));
+	return $dt->format('Y-m-d H:i:s');
+}
+
+
 #############
 ### INPUT ###
 #############
 
 # read args
-parse_str(implode('&', array_slice($argv, 1)), $ARGS);
+$ARGS = getopt('',array('from:','to:'));
 
 if (! array_key_exists("from", $ARGS) || ! array_key_exists("to", $ARGS)) {
-	echo "USAGE $argv[0] from=\"YYYY-MM-DD HH:MM:SS\" to=\"YYYY-MM-DD HH:MM:SS\" \n";
+	echo "USAGE $argv[0] --from=\"YYYY-MM-DD HH:MM:SS\" --to=\"YYYY-MM-DD HH:MM:SS\" \n";
 	exit;
 }
 
@@ -29,13 +40,15 @@ require $script_root."/lib/libs.php";
 global $LA;
 
 # ARGS
-$entry_from = $ARGS['from'];
-$entry_to = $ARGS['to'];
-if (! checkDateTime($entry_from) || ! checkDateTime($entry_to) ) {
+$entry_from = strtotime($ARGS['from']);
+$entry_to   = strtotime($ARGS['to']  );
+if ($entry_from===false || $entry_to===false ) {
 	echo "Arguments are not valid DATETIME. Format: YYYY-MM-DD HH:MM:SS\n";
 	print_r($ARGS);
 	exit;	
 }
+$entry_from = timestamp2datestr($entry_from);
+$entry_to   = timestamp2datestr($entry_to  );
 
 # open log
 openLogFile($script_root);
