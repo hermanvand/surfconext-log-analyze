@@ -156,13 +156,54 @@ if (isset($count)) {
 			}
 		}
 
-		# Save the array
+		# now lets see if everything went ok
+		mysql_query("START TRANSACTION", $LA['mysql_link_stats']);
+		$success = true;
+
+		# save the chunks
 		$status = LaChunkSave($chunkArray);
-		
-		echo "... done\n";
 		if ($status != 1) {
-			echo "WARNING: not all chunks are saved!\n";
+			echo "WARNING: not all chunks are saved, reverting!\n";
+			$success = false;
 		}
+
+		# check if there are overlaps
+		$result = mysql_query('
+			SELECT 
+			    a.chunk_id as ida, a.chunk_from as a1, a.chunk_to as a2,
+			    b.chunk_id as idb, b.chunk_from as b1, b.chunk_to as b2
+			FROM log_analyze_chunk as a, log_analyze_chunk as b
+			WHERE (
+			     a.chunk_from BETWEEN b.chunk_from AND b.chunk_to
+			  OR a.chunk_to   BETWEEN b.chunk_from AND b.chunk_to
+			  OR b.chunk_from BETWEEN a.chunk_from AND a.chunk_to
+			  OR b.chunk_to   BETWEEN a.chunk_from AND a.chunk_to
+			)
+			AND a.chunk_id<b.chunk_id
+		', $LA['mysql_link_stats']); 
+		if (mysql_num_rows($result)>0)
+		{
+			print "ERROR: chunks are overlapping, reverting!\n";
+			while ($row = mysql_fetch_assoc($result))
+			{
+				print " - overlap between {$row['ida']} ({$row['a1']} to {$row['a2']}) "
+				     ."and {$row['idb']} ({$row['b1']} to {$row['b2']})\n";
+
+			}
+			$success = false;
+		}
+
+		if ($success)
+		{
+			mysql_query("COMMIT", $LA['mysql_link_stats']);
+			echo "... done\n";
+		}
+		else
+		{
+			mysql_query("ROLLBACK", $LA['mysql_link_stats']);
+			echo "...chunking failed\n";
+		}
+
 	}
 	else {
 		echo "Chunk size too big: ".$chunk_size."\n";
@@ -173,25 +214,6 @@ if (isset($count)) {
 else {
 	echo "Could not fetch entries\n";
 }
-
-
-/*
- *  TODO: check om te zien of chunks overlappen:
- *
- * SELECT 
- *     a.chunk_id, a.chunk_from as a1, a.chunk_to as a2,
- *     b.chunk_id, b.chunk_from as b1, b.chunk_to as b2
- * FROM log_analyze_chunk as a, log_analyze_chunk as b
- * WHERE (
- *      a.chunk_from BETWEEN b.chunk_from AND b.chunk_to
- *   OR a.chunk_to   BETWEEN b.chunk_from AND b.chunk_to
- *   OR b.chunk_from BETWEEN a.chunk_from AND a.chunk_to
- *   OR b.chunk_to   BETWEEN a.chunk_from AND a.chunk_to
- * )
- * AND a.chunk_id<b.chunk_id
- *
- */
-
 
 #############
 ### CLOSE ###
