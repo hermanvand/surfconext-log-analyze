@@ -69,6 +69,7 @@ function getAllEntities() {
 			$name = $result_row['entityid'];
 			$entityid = $result_row['entityid'];
 			$revision = $result_row['revisionid'];
+			if ($revision==0) $prev_rev=null;
 
 			$dt = new DateTime($result_row['created']);
 			$timestamp = $dt->format("Y-m-d H:i:s");
@@ -126,9 +127,17 @@ function getAllEntities() {
 				$entities[$eid][$revision]['entityid'] = $entityid;
 				$entities[$eid][$revision]['environment'] = $environment;
 				$entities[$eid][$revision]['metadata'] = $extra;
+				$entities[$eid][$revision]['date_from'] = $timestamp;
+				$entities[$eid][$revision]['date_to'  ] = null;
+
+				# keep track of chain of revisions
+				if ($revision>0) {
+					$entities[$eid][$prev_rev]['date_to'] = $timestamp;
+				}
 
 				$prev_extra    = $extra;
 				$prev_env      = $environment;
+				$prev_rev      = $revision;
 			}
 
 			# Be fast, build indexes from name to eid, for both sp & idp :-)

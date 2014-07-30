@@ -131,29 +131,30 @@ function getEntriesFromLogins($from, $to, $dbh_logins, $dbh_stats) {
 			if (array_key_exists($result_row['spentityid'], $entities_sp_index)) {
 				$sp_eid = $entities_sp_index[$result_row['spentityid']];
 			}
-			$sp_revision = -1;
+			$sp_revision    = -1;
 			$sp_environment = "";
-			$sp_metadata = array();
+			$sp_metadata    = array();
+			$sp_datefrom    = null;
+			$sp_dateto      = null;
 			if ($sp_eid != 0) {
-				$first = 1;
+				$first = true;
+				# find last matching entity that was created before the user's 
+				# login time
 				foreach ($entities[$sp_eid] as $revision => $value) {
-					if ($first) {
-						$sp_revision = $revision;
+					if ($first or $value['timestamp'] < $result_row['loginstamp'])
+					{
+						$sp_revision    = $revision;
 						$sp_environment = $value['environment'];
-						$sp_entityid = $value['entityid'];
-						$sp_metadata = $value['metadata'];
-						$first = 0;
+						$sp_entityid    = $value['entityid'];
+						$sp_metadata    = $value['metadata'];
+						$sp_datefrom    = $value['date_from'];
+						$sp_dateto      = $value['date_to'];
+						$first = false;
 					}
-					else {
-						if ($value['timestamp'] > $result_row['loginstamp']) {
-							break;
-						}
-						else {
-							$sp_revision = $revision;
-							$sp_environment = $value['environment'];
-							$sp_entityid = $value['entityid'];
-							$sp_metadata = $value['metadata'];
-						}
+					else 
+						{
+						// $value['timestamp'] > $result_row['loginstamp']
+						break;
 					}
 				}
 			}
@@ -168,29 +169,29 @@ function getEntriesFromLogins($from, $to, $dbh_logins, $dbh_stats) {
 			if (array_key_exists($result_row['idpentityid'], $entities_idp_index)) {
 				$idp_eid = $entities_idp_index[$result_row['idpentityid']];
 			}
-			$idp_revision = -1;
+			$idp_revision    = -1;
 			$idp_environment = "";
-			$idp_metadata = array();
+			$idp_metadata    = array();
+			$idp_datefrom    = null;
+			$idp_dateto      = null;
 			if ($idp_eid != 0) {
-				$first = 1;
+				$first = true;
+				# find last matching entity that was created before the user's 
+				# login time
 				foreach ($entities[$idp_eid] as $revision => $value) {
-					if ($first) {
-						$idp_revision = $revision;
+					if ($first or $value['timestamp'] < $result_row['loginstamp'])
+					{
+						$idp_revision    = $revision;
 						$idp_environment = $value['environment'];
-						$idp_entityid = $value['entityid'];
-						$idp_metadata = $value['metadata'];
-						$first = 0;
+						$idp_entityid    = $value['entityid'];
+						$idp_metadata    = $value['metadata'];
+						$idp_datefrom    = $value['date_from'];
+						$idp_dateto      = $value['date_to'];
+						$first = false;
 					}
 					else {
-						if ($value['timestamp'] > $result_row['loginstamp']) {
-							break;
-						}
-						else {
-							$idp_revision = $revision;
-							$idp_environment = $value['environment'];
-							$idp_entityid = $value['entityid'];
-							$idp_metadata = $value['metadata'];
-						}
+						# $value['timestamp'] > $result_row['loginstamp']
+						break;
 					}
 				}
 			}
@@ -224,21 +225,25 @@ function getEntriesFromLogins($from, $to, $dbh_logins, $dbh_stats) {
 				$seen[$entry] = $tag;
 				
 				$entries[$entry] = array();
-				$entries[$entry]['time'] = $timestamp;
-				$entries[$entry]['sp'] = $result_row['spentityid'];
-				$entries[$entry]['idp'] = $result_row['idpentityid'];
-				$entries[$entry]['sp_name'] = $result_row['spentityname'];
-				$entries[$entry]['idp_name'] = $result_row['idpentityname'];
-				$entries[$entry]['sp_entityid'] = $sp_entityid;
-				$entries[$entry]['idp_entityid'] = $idp_entityid;
-				$entries[$entry]['sp_eid'] = $sp_eid;
-				$entries[$entry]['idp_eid'] = $idp_eid;
-				$entries[$entry]['sp_revision'] = $sp_revision;
-				$entries[$entry]['idp_revision'] = $idp_revision;
-				$entries[$entry]['sp_environment'] = $sp_environment;
+				$entries[$entry]['time']            = $timestamp;
+				$entries[$entry]['sp']              = $result_row['spentityid'];
+				$entries[$entry]['idp']             = $result_row['idpentityid'];
+				$entries[$entry]['sp_name']         = $result_row['spentityname'];
+				$entries[$entry]['idp_name']        = $result_row['idpentityname'];
+				$entries[$entry]['sp_entityid']     = $sp_entityid;
+				$entries[$entry]['idp_entityid']    = $idp_entityid;
+				$entries[$entry]['sp_eid']          = $sp_eid;
+				$entries[$entry]['idp_eid']         = $idp_eid;
+				$entries[$entry]['sp_revision']     = $sp_revision;
+				$entries[$entry]['idp_revision']    = $idp_revision;
+				$entries[$entry]['sp_datefrom']     = $sp_datefrom;
+				$entries[$entry]['idp_datefrom']    = $idp_datefrom;
+				$entries[$entry]['sp_dateto']       = $sp_dateto;
+				$entries[$entry]['idp_dateto']      = $idp_dateto;
+				$entries[$entry]['sp_environment']  = $sp_environment;
 				$entries[$entry]['idp_environment'] = $idp_environment;
-				$entries[$entry]['sp_metadata'] = $sp_metadata;
-				$entries[$entry]['idp_metadata'] = $idp_metadata;
+				$entries[$entry]['sp_metadata']     = $sp_metadata;
+				$entries[$entry]['idp_metadata']    = $idp_metadata;
 				$entries[$entry]['count'] = 1;
 				
 				$users[$entry] = array();

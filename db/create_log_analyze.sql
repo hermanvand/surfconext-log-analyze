@@ -51,28 +51,59 @@ END;;
 DELIMITER ;
 
 CREATE TABLE log_analyze_sp (
-	sp_id INT NOT NULL AUTO_INCREMENT,
-	sp_name VARCHAR(4096) DEFAULT NULL,
-	sp_entityid VARCHAR(4096) DEFAULT NULL,
-	sp_eid INT DEFAULT NULL,
-	sp_revision INT DEFAULT NULL,
+	sp_id          INT NOT NULL AUTO_INCREMENT,
+	sp_name        VARCHAR(4096) DEFAULT NULL,
+	sp_entityid    VARCHAR(4096) DEFAULT NULL,
+	sp_eid         INT DEFAULT NULL,
+	sp_revision    INT DEFAULT NULL,
+	sp_datefrom    DATETIME NULL,
+	sp_dateto      DATETIME NULL,
 	sp_environment VARCHAR(32) DEFAULT NULL,
 	PRIMARY KEY (sp_id),
 	INDEX entity_index (sp_eid,sp_revision),
 	INDEX (sp_environment)
 ) CHARACTER SET 'utf8';
+/* trigger to support 'null' values in dates */
+DELIMITER ;;
+CREATE trigger log_analyze_sp__trg_create
+BEFORE INSERT ON log_analyze_sp
+FOR EACH ROW BEGIN
+	IF NEW.sp_datefrom='00-00-00'
+		THEN SET NEW.sp_datefrom = NULL;
+	END IF;
+	IF NEW.sp_dateto='00-00-00'
+		THEN SET NEW.sp_dateto = NULL;
+	END IF;
+END;;
+DELIMITER ;
 
 CREATE TABLE log_analyze_idp (
-	idp_id INT NOT NULL AUTO_INCREMENT,
-	idp_name VARCHAR(4096) DEFAULT NULL,
-	idp_entityid VARCHAR(4096) DEFAULT NULL,
-	idp_eid INT NOT NULL,
-	idp_revision INT NOT NULL,
+	idp_id          INT NOT NULL AUTO_INCREMENT,
+	idp_name        VARCHAR(4096) DEFAULT NULL,
+	idp_entityid    VARCHAR(4096) DEFAULT NULL,
+	idp_eid         INT NOT NULL,
+	idp_revision    INT NOT NULL,
+	idp_datefrom    DATETIME NULL,
+	idp_dateto      DATETIME NULL,
 	idp_environment VARCHAR(32) DEFAULT NULL,
 	PRIMARY KEY (idp_id),
 	INDEX entity_index (idp_eid,idp_revision)
 	INDEX (idp_environment)
 ) CHARACTER SET 'utf8';
+/* trigger to support 'null' values in dates */
+DELIMITER ;;
+CREATE trigger log_analyze_idp__trg_create
+BEFORE INSERT ON log_analyze_idp
+FOR EACH ROW BEGIN
+	IF NEW.idp_datefrom='00-00-00'
+		THEN SET NEW.idp_datefrom = NULL;
+	END IF;
+	IF NEW.idp_dateto='00-00-00'
+		THEN SET NEW.idp_dateto = NULL;
+	END IF;
+END;;
+DELIMITER ;
+
 
 CREATE TABLE log_analyze_provider (
 	provider_id INT NOT NULL AUTO_INCREMENT,

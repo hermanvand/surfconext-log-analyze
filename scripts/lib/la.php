@@ -292,13 +292,15 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 			# insert SP
 			$query = "
 				INSERT INTO log_analyze_sp 
-				(sp_name,sp_entityid,sp_eid,sp_revision,sp_environment)
+					(sp_name,sp_entityid,sp_eid,sp_revision,sp_environment,sp_datefrom,sp_dateto)
 				VALUES(
 					'".safeInsert($entry['sp_name'])."',
 					'".safeInsert($entry['sp_entityid'])."',
 					{$entry['sp_eid']},
 					{$entry['sp_revision']},
-					'".safeInsert($entry['sp_environment'])."'
+					'".safeInsert($entry['sp_environment'])."',
+					'{$entry['sp_datefrom']}',
+					'{$entry['sp_dateto']}'
 				)
 			";
 			$result = mysql_query($query, $mysql_link);
@@ -328,13 +330,15 @@ function LaAnalyzeProviderUpdate($entry, $mysql_link) {
 			# insert IDP
 			$query = "
 				INSERT INTO log_analyze_idp 
-				(idp_name,idp_entityid,idp_eid,idp_revision,idp_environment) 
+					(idp_name,idp_entityid,idp_eid,idp_revision,idp_environment,idp_datefrom,idp_dateto) 
 				VALUES(
 					'".safeInsert($entry['idp_name'])."',
 					'".safeInsert($entry['idp_entityid'])."',
 					{$entry['idp_eid']},
 					{$entry['idp_revision']},
-					'".safeInsert($entry['idp_environment'])."'
+					'".safeInsert($entry['idp_environment'])."',
+					'{$entry['idp_datefrom']}',
+					'{$entry['idp_dateto']}'
 				)
 			";
 			$result = mysql_query($query, $mysql_link);
