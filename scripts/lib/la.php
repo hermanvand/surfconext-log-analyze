@@ -70,7 +70,7 @@ function LaChunkNewGet($mysql_link) {
 		$chunk['to'] = $result_row['chunk_to'];
 	
 		# update status
-		$query = "UPDATE log_analyze_chunk SET chunk_status = 'process', chunk_updated = '".$timestamp."' WHERE chunk_id = ".$chunk['id'];
+		$query = "UPDATE log_analyze_chunk SET chunk_status = 'process' WHERE chunk_id = ".$chunk['id'];
 		$result = mysql_query($query, $mysql_link);
 		if (mysql_affected_rows($mysql_link) != 1) {
 			catchMysqlError("LaChunkNewGet ($query): ".mysql_affected_rows($mysql_link), $mysql_link);
@@ -89,7 +89,7 @@ function LaChunkProcessUpdate($chunk_id, $chunk_logins, $mysql_link) {
 	$status = 1;
 	$timestamp = date("Y-m-d H:i:s");
 
-	$query = "UPDATE log_analyze_chunk SET chunk_status = 'done', chunk_updated = '".$timestamp."', chunk_out = ".$chunk_logins." WHERE chunk_id = ".$chunk_id;
+	$query = "UPDATE log_analyze_chunk SET chunk_status = 'done', chunk_out = {$chunk_logins} WHERE chunk_id = {$chunk_id}";
 	$result = mysql_query($query, $mysql_link);
 	if (mysql_affected_rows($mysql_link) != 1) {
 		catchMysqlError("LaChunkProcessUpdate ($query)", $mysql_link);
@@ -247,7 +247,7 @@ function LaAnalyzeDayUpdate($day, $environment, $logins, $mysql_link) {
 		$logins_update = $result_row['day_logins'] + $logins;
 	
 		# update day
-		$result = mysql_query("UPDATE log_analyze_day SET day_logins = ".$logins_update.", day_updated = '".$timestamp."' WHERE day_id = ".$day_id, $mysql_link);
+		$result = mysql_query("UPDATE log_analyze_day SET day_logins = {$logins_update} WHERE day_id = {$day_id}", $mysql_link);
 		if (mysql_affected_rows($mysql_link) != 1) {
 			catchMysqlError("LaAnalyzeDayUpdate (UPDATE)", $mysql_link);
 		}
