@@ -15,7 +15,7 @@ CREATE TABLE log_analyze_chunk (
 	INDEX from_index (chunk_from),
 	INDEX to_index (chunk_to),
 	INDEX status_index (chunk_status)
-);
+) CHARACTER SET 'utf8';
 /* trigger to automatically update chunk_created (necessary for MySQL<5.6) */
 DELIMITER ;;
 CREATE trigger log_analyze_chunk__trg_create
@@ -38,7 +38,7 @@ CREATE TABLE log_analyze_day (
 	day_updated TIMESTAMP DEFAULT NOW() ON UPDATE NOW(),
 	PRIMARY KEY (day_id),
 	INDEX day_index (day_day)
-);
+) CHARACTER SET 'utf8';
 /* trigger to automatically update day_created (necessary for MySQL<5.6) */
 DELIMITER ;;
 CREATE trigger log_analyze_day__trg_create
@@ -60,7 +60,7 @@ CREATE TABLE log_analyze_sp (
 	PRIMARY KEY (sp_id),
 	INDEX entity_index (sp_eid,sp_revision),
 	INDEX (sp_environment)
-);
+) CHARACTER SET 'utf8';
 
 CREATE TABLE log_analyze_idp (
 	idp_id INT NOT NULL AUTO_INCREMENT,
@@ -72,7 +72,7 @@ CREATE TABLE log_analyze_idp (
 	PRIMARY KEY (idp_id),
 	INDEX entity_index (idp_eid,idp_revision)
 	INDEX (idp_environment)
-);
+) CHARACTER SET 'utf8';
 
 CREATE TABLE log_analyze_provider (
 	provider_id INT NOT NULL AUTO_INCREMENT,
@@ -81,7 +81,7 @@ CREATE TABLE log_analyze_provider (
 	PRIMARY KEY (provider_id),
 	FOREIGN KEY (provider_sp_id) REFERENCES log_analyze_sp (sp_id) ON DELETE CASCADE,
 	FOREIGN KEY (provider_idp_id) REFERENCES log_analyze_idp (idp_id) ON DELETE CASCADE
-);
+) CHARACTER SET 'utf8';
 
 /* 
 * do not use an auto_increment id on the stats and users table
@@ -95,14 +95,14 @@ CREATE TABLE log_analyze_stats (
 	PRIMARY KEY (stats_day_id,stats_provider_id),
 	FOREIGN KEY (stats_day_id) REFERENCES log_analyze_day (day_id) ON DELETE CASCADE,
 	FOREIGN KEY (stats_provider_id) REFERENCES log_analyze_provider (provider_id) ON DELETE CASCADE
-);
+) CHARACTER SET 'utf8';
 
 CREATE TABLE log_analyze_semaphore (
 	semaphore_id INT NOT NULL,
 	semaphore_name VARCHAR(128) NOT NULL,
 	semaphore_value INT NOT NULL,
 	PRIMARY KEY (semaphore_id)
-);
+) CHARACTER SET 'utf8';
 
 INSERT INTO log_analyze_semaphore VALUES(1,"provider",1);
 INSERT INTO log_analyze_semaphore VALUES(2,"unknownSP",1);
@@ -128,7 +128,7 @@ CREATE TABLE `log_analyze_period` (
 	KEY (`period_period`,`period_year`),
 	KEY (`period_type`),
 	KEY (`period_environment`)
-);
+) CHARACTER SET 'utf8';
 /* trigger to automatically update period_created (necessary for MySQL<5.6) */
 DELIMITER ;;
 CREATE trigger log_analyze_period__trg_create
@@ -152,7 +152,7 @@ CREATE TABLE log_analyze_periodstats (
 	FOREIGN KEY (`periodstats_period_id`) REFERENCES `log_analyze_period` (`period_id`) ON DELETE CASCADE,
 	FOREIGN KEY (`periodstats_idp_id`)    REFERENCES `log_analyze_idp`    (`idp_id`)    ON DELETE CASCADE,
 	FOREIGN KEY (`periodstats_sp_id`)     REFERENCES `log_analyze_sp`     (`sp_id`)     ON DELETE CASCADE
-);
+) CHARACTER SET 'utf8';
 /* trigger to automatically update periodstats_created (necessary for MySQL<5.6) */
 DELIMITER ;;
 CREATE trigger log_analyze_periodstats__trg_create
