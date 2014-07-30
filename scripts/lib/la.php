@@ -61,7 +61,7 @@ function LaChunkNewGet($mysql_link) {
 	mysql_query("START TRANSACTION", $mysql_link);
 	
 	# get id
-	$result = mysql_query("SELECT chunk_id,chunk_from,chunk_to FROM log_analyze_chunk WHERE chunk_status = 'new' LIMIT 1 FOR UPDATE", $mysql_link);
+	$result = mysql_query("SELECT chunk_id,chunk_from,chunk_to FROM log_analyze_chunk WHERE chunk_status = 'new' ORDER BY `chunk_from` LIMIT 1 FOR UPDATE", $mysql_link);
 	
 	if ($result && mysql_num_rows($result) == 1) {
 		$result_row = mysql_fetch_assoc($result);
