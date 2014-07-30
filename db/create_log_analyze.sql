@@ -34,6 +34,7 @@ CREATE TABLE log_analyze_day (
 	day_day DATE DEFAULT NULL,
 	day_environment VARCHAR(8) DEFAULT NULL,
 	day_logins INT DEFAULT NULL,
+	day_users INT DEFAULT NULL,
 	day_created TIMESTAMP NULL DEFAULT NULL,
 	day_updated TIMESTAMP DEFAULT NOW() ON UPDATE NOW(),
 	PRIMARY KEY (day_id),

@@ -368,6 +368,25 @@ function agPeriodTotals($periods)
 	}
 }
 
+# update the number of unique users for this day
+function agCalcDayTotals($day_id)
+{
+	global $LA;
+
+	$q = "
+		update log_analyze_day
+		set day_users = (
+			select count(distinct user_name) from log_analyze_days__{$day_id}
+		)
+		where day_id={$day_id};
+	";
+	$result = mysql_query($q,$LA['mysql_link_stats']);
+	if (!$result) {
+		catchMysqlError("agCalcDayTotals($day_di)", $LA['mysql_link_stats']);
+		return;
+	}
+}
+
 
 function agAggregate($file)
 {
@@ -423,6 +442,7 @@ function agAggregate($file)
 
 			print "[$env]:";
 
+			agCalcDayTotals($day_id);
 			$periods[] = agHandlePeriod($day_id,$env,'w',$date['w'],$date['wy']);
 			$periods[] = agHandlePeriod($day_id,$env,'m',$date['m'],$date['y']);
 			$periods[] = agHandlePeriod($day_id,$env,'q',$date['q'],$date['y']);
