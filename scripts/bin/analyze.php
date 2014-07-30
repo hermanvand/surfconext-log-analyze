@@ -256,6 +256,7 @@ echo "Starting aggregation\n";
 $total_time_start = microtime(true);
 
 $LA['mysql_link_stats'] = openMysqlDb("DB_stats");
+agEntityRelations();
 $num_days = agAggregate($chunk_info_file);
 closeMysqlDb($LA['mysql_link_stats']);
 

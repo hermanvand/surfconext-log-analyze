@@ -59,9 +59,13 @@ CREATE TABLE log_analyze_sp (
 	sp_datefrom    DATETIME NULL,
 	sp_dateto      DATETIME NULL,
 	sp_environment VARCHAR(32) DEFAULT NULL,
+	sp_parent_id   INT DEFAULT NULL,
+	sp_child_id    INT DEFAULT NULL,
 	PRIMARY KEY (sp_id),
 	INDEX entity_index (sp_eid,sp_revision),
 	INDEX (sp_environment)
+	FOREIGN KEY (sp_parent_id) REFERENCES `log_analyze_sp`(`sp_id`),
+	FOREIGN KEY (sp_child_id ) REFERENCES `log_analyze_sp`(`sp_id`),
 ) CHARACTER SET 'utf8';
 /* trigger to support 'null' values in dates */
 DELIMITER ;;
@@ -86,7 +90,11 @@ CREATE TABLE log_analyze_idp (
 	idp_datefrom    DATETIME NULL,
 	idp_dateto      DATETIME NULL,
 	idp_environment VARCHAR(32) DEFAULT NULL,
+	idp_parent_id   INT DEFAULT NULL,
+	idp_child_id    INT DEFAULT NULL,
 	PRIMARY KEY (idp_id),
+	FOREIGN KEY (idp_parent_id) REFERENCES `log_analyze_idp`(`idp_id`),
+	FOREIGN KEY (idp_child_id ) REFERENCES `log_analyze_idp`(`idp_id`),
 	INDEX entity_index (idp_eid,idp_revision)
 	INDEX (idp_environment)
 ) CHARACTER SET 'utf8';
