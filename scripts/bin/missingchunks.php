@@ -199,7 +199,7 @@ if ( mysql_query("SET time_zone='+0:00';",$dbh) === false )
 	exit(1);
 }
 
-$start = new DateTime('2005-01-01 00:00:00');
+$start = new DateTime('2011-06-01 00:00:00');
 $start = $start->getTimestamp();
 
 # keep track of states in a timeline
@@ -229,7 +229,7 @@ while ($chunk = mysql_fetch_assoc($result))
 	$from = $chunk['chunk_from'];
 	$to   = $chunk['chunk_to'  ];
 
-	if ( $from <= $start )
+	if ( $from < $start )
 	{
 		print "Chunk out of range: $from < $start\n";
 		exit(1);
