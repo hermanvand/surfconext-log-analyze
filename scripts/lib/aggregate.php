@@ -200,6 +200,8 @@ function agPeriodTotals($periods)
 
 	foreach ($periods as $period)
 	{
+		mysql_query("START TRANSACTION", $LA['mysql_link_stats']);
+
 		print "period: $period ";
 
 		# fetch days belonging to the currect period
@@ -365,6 +367,8 @@ function agPeriodTotals($periods)
 			catchMysqlError("agPeriodTotals: error while calculating periodstats for period {$period}, query was: $q", $LA['mysql_link_stats']);
 			continue;
 		}
+
+		mysql_query("COMMIT", $LA['mysql_link_stats']);
 	}
 }
 
