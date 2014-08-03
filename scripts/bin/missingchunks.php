@@ -135,7 +135,7 @@ class TimeLine
 			if ($node->status()==$status)
 			{
 				$end = time();
-				if ($node->next()) $end = $node->next()->date();
+				if ($node->next()) $end = $node->next()->date()-1;
 					
 				$result[] = array($node->date(),$end);
 			}
