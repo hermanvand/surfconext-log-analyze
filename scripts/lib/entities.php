@@ -39,9 +39,22 @@ function fixIdPSPTables()
 }
 
 
-function array_equal($a,$b)
+// compare two metadata arrays (assuming the keys are identical!)
+// return false if the arrays are the same
+// return true if array2 is different from array 1
+// except if a new key was introduced, then return true
+// 
+// the idea here is that if a previously non-existing field was added, that's 
+// most probably not a significant change.  However, if the contents of the 
+// field changed, that would be considered major
+function _laMetadataChanged($array1,$array2)
 {
-	return !array_diff_assoc($a,$b) && !array_diff_assoc($b,$a);
+	foreach ($array1 as $k=>$v)
+	{
+		if ( !isset($array2[$k]) ) return true;
+		if ( $array2[$k]!==$v    ) return true;
+	}
+	return false;
 }
 
 function getAllEntities() {
@@ -121,7 +134,9 @@ function getAllEntities() {
 			}
 
 			# Be smart, only consider revision with changes in environment :-)
-			if ( $provider != $prev_provider || $environment != $prev_env || !array_equal($extra,$prev_extra) ) {
+			if ( $provider != $prev_provider or $environment!=$prev_env 
+				or _laMetadataChanged($prev_extra,$extra) ) 
+			{
 				$entities[$eid][$revision] = array();
 				$entities[$eid][$revision]['timestamp'] = $timestamp;
 				$entities[$eid][$revision]['entityid'] = $entityid;
