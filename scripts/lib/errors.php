@@ -35,6 +35,7 @@ function catchException($exception) {
 # my mysql error catching
 function catchMysqlError($function, $mysql_link) {
 	echoMysqlError($function, mysql_errno($mysql_link), mysql_error($mysql_link));
+	exit(-1);
 }
 
 #########
@@ -64,10 +65,8 @@ function log2file($message) {
 
     if ( array_key_exists('log_handler',$LA) && $LA['log_handler'] ) {
         fwrite($LA['log_handler'], $out, strlen($out));
-    } else {
-        print "$out";
     }
-
+    print "$out";
 }
 
 # error logging
