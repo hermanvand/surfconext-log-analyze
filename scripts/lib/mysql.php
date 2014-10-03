@@ -6,7 +6,10 @@ function openMysqlDb($db) {
 
 	$mysql_link = mysql_connect($LA[$db]['mysql_host'], $LA[$db]['mysql_user'], $LA[$db]['mysql_pass'],true);
 
-	if ($mysql_link===false) exit(1);
+	if ($mysql_link===false) {
+		echoProgramException('mysql.php',10,1,"Couldn't connecto to mysql server {$LA[$db]['mysql_host']}\n");
+		exit(1);
+	}
 
 	mysql_select_db($LA[$db]['mysql_db'], $mysql_link);
 	mysql_query("SET NAMES 'utf8';", $mysql_link)
