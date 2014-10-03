@@ -14,9 +14,9 @@ $script_root = dirname(realpath(__FILE__));
 $script_root .= "/..";
 
 # read config & libs
-require $script_root."/etc/config.php";
-require $script_root."/lib/libs.php";
-require $script_root."/lib/aggregate.php";
+require "{$script_root}/etc/config.php";
+require "{$script_root}/lib/libs.php";
+require "{$script_root}/lib/aggregate.php";
 global $LA;
 
 # time zone
@@ -80,12 +80,15 @@ function processChunk($chunk,$dbh_logins,$dbh_stats)
 	$chunk_logins = 0;
 
 	echo "processing chunk: ".$chunk['id']."\n";
-	list($entries,$users) = getEntriesFromLogins($chunk['from'],$chunk['to'],$dbh_logins,$dbh_stats);
+	list($entries,$users) = getEntriesFromLogins($chunk['from'],$chunk['to'],$dbh_logins);
+
+	#print_r($entries);
+	#print_r($users);
 
 	# entry fields to process
 	# - $entries[$entry]['time']
-	# - $entries[$entry]['sp']
-	# - $entries[$entry]['idp']
+	# - $entries[$entry]['sp_entityid']
+	# - $entries[$entry]['idp_entityid']
 	# - $entries[$entry]['sp_name']
 	# - $entries[$entry]['idp_name']
 	# - $entries[$entry]['sp_eid']
@@ -94,32 +97,33 @@ function processChunk($chunk,$dbh_logins,$dbh_stats)
 	# - $entries[$entry]['idp_revision']
 	# - $entries[$entry]['sp_environment']
 	# - $entries[$entry]['idp_environment']
+	# - $entries[$entry]['environment']
 	# - $entries[$entry]['sp_metadata']
 	# - $entries[$entry]['idp_metadata']
 	# - $entries[$entry]['count']
 	foreach ($entries as $key => $entry) {
 
 		# ignore entires form blacklisted entityids
-		if ( in_array($entry['sp'], $LA['entity_blacklist']) ||
-			in_array($entry['idp'],$LA['entity_blacklist']) ) continue; 
+		if ( in_array($entry['sp_entityid'], $LA['entity_blacklist']) ||
+		     in_array($entry['idp_entityid'],$LA['entity_blacklist']) ) continue;
 
-		# first, check the day 
+		# first, check the day
 		# - note: two steps to make locking easier and faster
-		$day_status = LaAnalyzeDayInsert($entry['time'],$entry['sp_environment'],$dbh_stats);
-		$day_id = LaAnalyzeDayUpdate($entry['time'],$entry['sp_environment'],$entry['count'],$dbh_stats);
+		$day_id = LaAnalyzeDayInsert($entry['time'],$entry['environment'],$dbh_stats);
+		LaAnalyzeDayUpdate($day_id,$entry['count'],$dbh_stats);
 
 		# second, check the SP and IDP
 		$provider_id = LaAnalyzeProviderUpdate($entry,$dbh_stats);
 
 		# third, update the main table with login count
-		$stats_status = LaAnalyzeStatsUpdate($day_id,$provider_id,$entry['count'],$dbh_stats);
+		LaAnalyzeStatsUpdate($day_id,$provider_id,$entry['count'],$dbh_stats);
 
 		# fourth, update users table & update main table with new user count
 		# - note, this might be the performance killer...
 		if (! $LA['disable_user_count']) {
 			$chunk_users = LaAnalyzeUserUpdate($day_id,$provider_id,$users[$key],$dbh_stats);
 			if ($chunk_users > 0) {
-				$stats_status = LaAnalyzeStatsUpdateUser($day_id,$provider_id,$chunk_users,$dbh_stats);
+				LaAnalyzeStatsUpdateUser($day_id,$provider_id,$chunk_users,$dbh_stats);
 			}
 		}
 
@@ -149,7 +153,7 @@ function runChild()
 	$chunk = LaChunkNewGet($child_link_stats);
 	if (isset($chunk['id'])) {
 		$chunk_logins = processChunk($chunk,$child_link_logins,$child_link_stats);
-		$done_status = LaChunkProcessUpdate($chunk['id'], $chunk_logins, $child_link_stats);
+		LaChunkProcessUpdate($chunk['id'], $chunk_logins, $child_link_stats);
 		agSaveChunkInfo($chunk_info_file,$chunk);
 	}
 	else {
@@ -182,7 +186,7 @@ function runChild()
 # get entity metadata from SR
 echo "Fetching entity descriptions and metadata...";
 $LA['mysql_link_sr'] = openMysqlDb("DB_sr");
-list($entities,$entities_sp_index,$entities_idp_index) = getAllEntities();
+$entities = getAllEntities();
 closeMysqlDb($LA['mysql_link_sr']);
 echo "\n";
 
@@ -259,7 +263,6 @@ echo "Starting aggregation\n";
 $total_time_start = microtime(true);
 
 $LA['mysql_link_stats'] = openMysqlDb("DB_stats");
-agEntityRelations();
 $num_days = agAggregate($chunk_info_file);
 closeMysqlDb($LA['mysql_link_stats']);
 

@@ -407,7 +407,7 @@ function agAggregate($file)
 		assert($d1<$d2);
 
 		# we're only interested in the date, not the time.  Make sure the last 
-		# day is oncluded too
+		# day is included too
 		$d1->setTime(0,0,0);
 		$d2->setTime(0,0,1);
 
@@ -432,7 +432,7 @@ function agAggregate($file)
 		#look up id and environment
 		$result = mysql_query("SELECT day_id,day_environment FROM log_analyze_day WHERE day_day='{$d}' ORDER BY day_day,day_environment",$LA['mysql_link_stats']);
 		if (!$result) {
-			catchMysqlError("agAggregate: day {$date} not found", $LA['mysql_link_stats']);
+			catchMysqlError("agAggregate: day {$d} not found", $LA['mysql_link_stats']);
 			return;
 		}
 
@@ -465,7 +465,7 @@ function agAggregate($file)
 
 }
 
-
+# todo: not used any more
 # calculate relationships (child/parent) between entity (SP/IdP) revisions
 function agEntityRelations()
 {

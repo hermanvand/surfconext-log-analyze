@@ -32,13 +32,13 @@ DELIMITER ;
 CREATE TABLE log_analyze_day (
 	day_id INT NOT NULL AUTO_INCREMENT,
 	day_day DATE DEFAULT NULL,
-	day_environment VARCHAR(8) DEFAULT NULL,
-	day_logins INT DEFAULT NULL,
-	day_users INT DEFAULT NULL,
+	day_environment CHAR(2) NOT NULL,
+	day_logins INT DEFAULT 0,
+	day_users INT DEFAULT 0,
 	day_created TIMESTAMP NULL DEFAULT NULL,
 	day_updated TIMESTAMP DEFAULT NOW() ON UPDATE NOW(),
 	PRIMARY KEY (day_id),
-	INDEX day_index (day_day)
+	UNIQUE  KEY day_index (day_day,day_environment)
 ) CHARACTER SET 'utf8';
 /* trigger to automatically update day_created (necessary for MySQL<5.6) */
 DELIMITER ;;
@@ -55,16 +55,12 @@ CREATE TABLE log_analyze_sp (
 	sp_id          INT NOT NULL AUTO_INCREMENT,
 	sp_name        VARCHAR(4096) DEFAULT NULL,
 	sp_entityid    VARCHAR(4096) DEFAULT NULL,
-	sp_eid         INT DEFAULT NULL,
-	sp_revision    INT DEFAULT NULL,
+	sp_environment CHAR(2) DEFAULT NULL,
+	sp_meta        CHAR(64) DEFAULT NULL,
 	sp_datefrom    DATETIME NULL,
 	sp_dateto      DATETIME NULL,
-	sp_parent_id   INT DEFAULT NULL,
-	sp_child_id    INT DEFAULT NULL,
 	PRIMARY KEY (sp_id),
-	FOREIGN KEY (sp_parent_id) REFERENCES `log_analyze_sp`(`sp_id`),
-	FOREIGN KEY (sp_child_id ) REFERENCES `log_analyze_sp`(`sp_id`),
-	INDEX entity_index (sp_eid,sp_revision)
+	UNIQUE  KEY entity_index (sp_entityid(128),sp_environment,sp_meta)
 ) CHARACTER SET 'utf8';
 /* trigger to support 'null' values in dates */
 DELIMITER ;;
@@ -84,16 +80,12 @@ CREATE TABLE log_analyze_idp (
 	idp_id          INT NOT NULL AUTO_INCREMENT,
 	idp_name        VARCHAR(4096) DEFAULT NULL,
 	idp_entityid    VARCHAR(4096) DEFAULT NULL,
-	idp_eid         INT NOT NULL,
-	idp_revision    INT NOT NULL,
+	idp_environment CHAR(2) DEFAULT NULL,
+	idp_meta        CHAR(64) DEFAULT NULL,
 	idp_datefrom    DATETIME NULL,
 	idp_dateto      DATETIME NULL,
-	idp_parent_id   INT DEFAULT NULL,
-	idp_child_id    INT DEFAULT NULL,
 	PRIMARY KEY (idp_id),
-	FOREIGN KEY (idp_parent_id) REFERENCES `log_analyze_idp`(`idp_id`),
-	FOREIGN KEY (idp_child_id ) REFERENCES `log_analyze_idp`(`idp_id`),
-	INDEX entity_index (idp_eid,idp_revision)
+	UNIQUE  KEY entity_index (idp_entityid(128),idp_environment,idp_meta)
 ) CHARACTER SET 'utf8';
 /* trigger to support 'null' values in dates */
 DELIMITER ;;
@@ -129,7 +121,7 @@ CREATE TABLE log_analyze_stats (
 	stats_logins INT DEFAULT NULL,
 	stats_users INT DEFAULT NULL,
 	PRIMARY KEY (stats_day_id,stats_provider_id),
-	FOREIGN KEY (stats_day_id) REFERENCES log_analyze_day (day_id) ON DELETE CASCADE,
+	FOREIGN KEY (stats_day_id     ) REFERENCES log_analyze_day (day_id) ON DELETE CASCADE,
 	FOREIGN KEY (stats_provider_id) REFERENCES log_analyze_provider (provider_id) ON DELETE CASCADE
 ) CHARACTER SET 'utf8';
 
@@ -137,14 +129,16 @@ CREATE TABLE log_analyze_semaphore (
 	semaphore_id INT NOT NULL,
 	semaphore_name VARCHAR(128) NOT NULL,
 	semaphore_value INT NOT NULL,
-	PRIMARY KEY (semaphore_id)
+	PRIMARY KEY (semaphore_id),
+	KEY (semaphore_name),
+	KEY (semaphore_value)
 ) CHARACTER SET 'utf8';
 
-INSERT INTO log_analyze_semaphore VALUES(1,"provider",1);
-INSERT INTO log_analyze_semaphore VALUES(2,"unknownSP",1);
-INSERT INTO log_analyze_semaphore VALUES(3,"unknownIDP",1);
-INSERT INTO log_analyze_semaphore VALUES(4,"user",1);
-INSERT INTO log_analyze_semaphore VALUES(5,"day",1);
+INSERT INTO log_analyze_semaphore VALUES(1,'provider',1);
+INSERT INTO log_analyze_semaphore VALUES(2,'unknownSP',1);
+INSERT INTO log_analyze_semaphore VALUES(3,'unknownIDP',1);
+INSERT INTO log_analyze_semaphore VALUES(4,'user',1);
+INSERT INTO log_analyze_semaphore VALUES(5,'day',1);
 
 /* aggregation tables */
 CREATE TABLE `log_analyze_period` (
