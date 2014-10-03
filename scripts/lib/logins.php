@@ -4,6 +4,11 @@
 ### LOGINS ###
 ##############
 
+function array_index($array,$i)
+{
+	return $array[$i];
+}
+
 # for test
 function getTotalNumberOfEntries($from, $to) {
     global $LA;
@@ -174,7 +179,8 @@ function getEntriesFromLogins($from, $to, $dbh_logins) {
 			$sp_metadata    = $spentity['metadata'];
 			$sp_metahash    = $spentity['metahash'];
 			$sp_datefrom    = $spentity['dates'][0][0];
-			$sp_dateto      = end($spentity['dates'])[1];
+			# array_index() because php5.3 doesn't support foo($bla)[1]
+			$sp_dateto      = array_index( end($spentity['dates']), 1); 
 		}
 		else
 		{ # entity unknown in SR
@@ -198,7 +204,7 @@ function getEntriesFromLogins($from, $to, $dbh_logins) {
 			$idp_metadata    = $idpentity['metadata'];
 			$idp_metahash    = $idpentity['metahash'];
 			$idp_datefrom    = $idpentity['dates'][0][0];
-			$idp_dateto      = end($idpentity['dates'])[1];
+			$idp_dateto      = array_index( end($idpentity['dates']), 1);
 		}
 		else
 		{ # entity unknown in SR
