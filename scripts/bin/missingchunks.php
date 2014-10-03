@@ -40,15 +40,18 @@ class TimeLine
 	private $lastNode  = null;
 	private $debug     = false;
 
-	function __construct($start_date,$status)
+	function __construct($start_date,$stop_date,$status)
 	{
-		$this->firstNode = $this->lastNode = new TimelineNode(null,null,$start_date,$status);
+		$this->firstNode = new TimelineNode(null,null,$start_date,$status);
+		$this->lastNode = $this->firstNode;
+		$this->addAfter( $this->firstNode, $stop_date, 'X' );
 	}
 
 	private function addAfter($afterThisNode,$date,$status)
 	{
 		$beforeThisNode = $afterThisNode->next();
-		$node = new TimelineNode($afterThisNode,$beforeThisNode,$date,$status);
+		$node = new TimelineNode($afterThisNode, $beforeThisNode, $date, $status);
+		if ($beforeThisNode===null) $this->lastNode = $node;
 		return $node;
 	}
 
@@ -66,7 +69,7 @@ class TimeLine
 		$node2 = $startNode; 
 		while ($node2->next() and $node2->next()->status()==$node2->status())
 		{
-			$node2 = $node2->prev();
+			$node2 = $node2->next();
 		}
 
 		while ( $node1!==$node2 and $node1->status()==$node2->status() ) 
@@ -80,6 +83,7 @@ class TimeLine
 	{
 		if ($date_to  <=$date_from              ) throw new Exception("Date `$date_to` out of range");
 		if ($date_from< $this->firstNode->date()) throw new Exception("Date `$date_from` out of range");
+		if ($date_to  > $this->lastNode ->date()) throw new Exception("Date `$date_to` out of range");
 
 		# find correct place to insert
 		$node = $this->firstNode;
@@ -146,6 +150,7 @@ class TimeLine
 
 	function dump()
 	{
+		print "---\n";
 		$i = 0;
 		$node = $this->firstNode;
 		while ($node)
@@ -155,6 +160,7 @@ class TimeLine
 			$i++;
 			$node = $node->next();
 		}
+		print "---\n";
 	}
 }
 
@@ -192,7 +198,35 @@ $script_root .= "/..";
 require $script_root."/etc/config.php";
 require $script_root."/lib/libs.php";
 
+global $LA;
+
 date_default_timezone_set('UTC');
+
+$dbh = openMysqlDb("DB_logins");
+if ( mysql_query("SET time_zone='+0:00';",$dbh) === false )
+{
+	catchMysqlError("failed to set time zone", $dbh);
+	exit(1);
+}
+
+$result = mysql_query("select UNIX_TIMESTAMP(loginstamp) as 'a' from log_logins order by id asc limit 1");
+if ($result===false)
+{
+	catchMysqlError("error while fetching start time", $dbh);
+}
+$row = mysql_fetch_assoc($result);
+$start = $row['a']+0;
+
+$result = mysql_query("select UNIX_TIMESTAMP(loginstamp) as 'a' from log_logins order by id desc limit 1");
+if ($result===false)
+{
+	catchMysqlError("error while fetching start time", $dbh);
+}
+$row = mysql_fetch_assoc($result);
+$stop = $row['a']+0;
+
+mysql_close($dbh);
+
 
 $dbh = openMysqlDb("DB_stats");
 if ( mysql_query("SET time_zone='+0:00';",$dbh) === false )
@@ -201,15 +235,14 @@ if ( mysql_query("SET time_zone='+0:00';",$dbh) === false )
 	exit(1);
 }
 
-$start = new DateTime('2011-06-01 00:00:00');
-$start = $start->getTimestamp();
 
 # keep track of states in a timeline
 # U = unprocessed
 # C = chunked but not analyzed
 # I = chunked and in progress
 # D = done
-$timeline = new Timeline($start,'U');
+# X = end
+$timeline = new Timeline($start,$stop,'U');
 
 # fetch the chunks
 $q = '
