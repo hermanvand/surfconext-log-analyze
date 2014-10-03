@@ -11,6 +11,8 @@ function timestamp2datestr($timestamp)
 	return $dt->format('Y-m-d H:i:s');
 }
 
+date_default_timezone_set("UTC");
+
 
 #############
 ### INPUT ###

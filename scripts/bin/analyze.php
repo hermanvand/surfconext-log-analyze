@@ -19,6 +19,9 @@ require $script_root."/lib/libs.php";
 require $script_root."/lib/aggregate.php";
 global $LA;
 
+# time zone
+date_default_timezone_set($LA['timezone']);
+
 # open log
 openLogFile($script_root);
 

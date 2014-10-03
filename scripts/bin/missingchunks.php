@@ -192,6 +192,8 @@ $script_root .= "/..";
 require $script_root."/etc/config.php";
 require $script_root."/lib/libs.php";
 
+date_default_timezone_set('UTC');
+
 $dbh = openMysqlDb("DB_stats");
 if ( mysql_query("SET time_zone='+0:00';",$dbh) === false )
 {
